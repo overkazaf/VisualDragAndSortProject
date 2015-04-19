@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Document</title>
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/smartMenu.css" type="text/css" />
+		<style type="text/css">
+			*{margin:0;padding:0;}
+			li{list-style: none;}
+			.header{height:auto;width:100%;min-width: 960px;min-height:140px;position: fixed;left:0;top:0;}
+			.header .publish-part{height:54px;width:100%;background-color:#eee;padding-top:10px;}
+			.header .publish-area input{position:relative;float:left;margin-right:4px;width:240px;}
+			.header .publish-area button.inp-btn{float:left;margin-left:4px;}
+			.header .tool-part{height:auto;width:100%;color:#fff;background-color:#444851;}
+			.header ul.tool-menu{width:auto;height:45px;line-height: 45px;margin-bottom:0;!important;}
+			ul.tool-menu li.tool-menu-item{height:45px;line-height:45px;cursor:pointer;float:left;margin-right:2px;min-width:80px;text-align: center;}
+			ul.tool-menu li.tool-menu-item:hover{background-color:#09f;color:#fff;}
+			.header .selected{background-color:#09f;color:#fff;}
+			.header .tool-container{max-height:220px;height:160px;overflow:auto;background-color:#FFF;color:#000;}
+			
+			/* Layout CSS */
+			.widget-contents ul.widget-list,
+			.layout-container ul.layout-list{width:90%;margin-top:10px;}
+			
+			.widget-contents ul.widget-list li.widget-list-item,
+			.layout-container ul.layout-list li.layout-list-item{cursor:pointer;background-color:pink;float:left;width:200px;height:120px;margin-left: 10px;}
+			/* Layout CSS end*/
+			/* Widget CSS */
+			.widget-container ul.widget-items-tab {width:90%;display: block;}
+			.widget-container ul.widget-items-tab li.widget-item-radio{cursor:pointer;min-width:80px;height:45px;line-height:45px;width:auto;float: left;margin-left:20px;}
+			.widget-container ul.widget-items-tab li.widget-item-radio input{margin:4px;}
+			.widget-container ul.widget-items-tab li.widget-item-radio small{display:inline-block;font-size:14px;}
+			.widget-container .widget-contents{display: block;float: left;height:200px;width:100%;}
+				/* Widget item CSS */
+				.widget-contents ul.widget-list li.widget-list-item{height:80px;background-color: #09F;width:100px;}
+			/* Widget CSS end*/
+			/* main wrapper */
+			.wrapper{margin-top: 200px;margin-bottom:200px;padding:5px;background-color:#CCC;width:100%;height:auto;}
+			.wrapper .drag-part{min-height: 120px;height:auto;width:100%;margin:5px auto;border:1px dashed #000;}
+			.placeHolder { background-color:white !important; border:dashed 1px gray !important; }
+
+			.clear{ clear:both} 
+			input.inp-mg{width:20px;margin-left:2px;margin-right:10px;display: inline;}
+		</style>
+	</head>
+	<body>
+		<div class="header">
+			<input name="list1SortOrder" type="hidden" />
+			<div class="publish-part">
+				<div class="container publish-area">
+					<input type="text" class="form-control">
+					<div class="inp-btn">
+						<button class="btn btn-primary btn-inline" id="btn-publish">发布</button>
+					</div>
+					
+				</div>
+			</div>
+			<div class="tool-part">
+				<ul class="tool-menu">
+					<li class="tool-menu-item">布局</li>
+					<li class="tool-menu-item">部件</li>
+					<li class="tool-menu-item">主题</li>
+					<li class="tool-menu-item">背景</li>
+				</ul>
+				<div class="toggle-container">
+					<div class="tool-container layout-container">
+						<ul class="layout-list">
+							<li class="layout-list-item" data-layout-template="template1">Layout1</li>
+							<li class="layout-list-item" data-layout-template="template2">Layout2</li>
+							<li class="layout-list-item" data-layout-template="template3">Layout3</li>
+							<li class="layout-list-item" data-layout-template="template4">Layout4</li>
+						</ul>
+					</div>
+					<div class="tool-container widget-container">
+						<ul class="widget-items-tab">
+							<li class='widget-item-radio'><input type="radio"><small>头部</small></li>
+							<li class='widget-item-radio'><input type="radio"><small>侧边栏</small></li>
+							<li class='widget-item-radio'><input type="radio"><small>底部</small></li>
+							<li class='widget-item-radio'><input type="radio"><small>头部</small></li>
+							<li class='widget-item-radio'><input type="radio"><small>侧边栏</small></li>
+						</ul>
+						<div class="widget-contents">
+							<div class="widget-content">
+								<ul id="test-list" class="widget-list">
+									<li class="widget-list-item">A</li>
+									<li class="widget-list-item">B</li>
+									<li class="widget-list-item">C</li>
+									<li class="widget-list-item">D</li>
+								</ul>
+							</div>
+							<div class="widget-content">200</div>
+							<div class="widget-content">3</div>
+							<div class="widget-content">4</div>
+							<div class="widget-content">5</div>
+						</div>
+					</div>
+					<div class="tool-container theme-container">
+						主题
+					</div>
+					<div class="tool-container background-container">
+						背景
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="wrapper">
+			<ul id="dragged-list">
+				<li class="drag-part" operable="flash">bread</li>
+				<li class="drag-part" data-source-code='widget'>vegetables</li>
+				<li class="drag-part" operable="text,href">meat</li>
+				<li class="drag-part">milk</li>
+				<li class="drag-part">butter</li>
+				<li class="drag-part">ice cream</li>
+			</ul>
+		</div>
+		<!-- Configuration Modal -->
+		<div class="modal hide fade" id="configModal" tabindex="-1" role="dialog" data-backdrop="static" role='main'>
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<div class="modal-title">
+							<button type="button" class="close"
+							data-dismiss="modal" aria-hidden="true">
+							&times;
+							</button>
+							<h4>设置信息</h4>
+						</div>
+					</div>
+					<div class="modal-body"></div>
+					<div class="modal-footer">
+						<button class="btn btn-primary">确定</button>
+						<button class="btn btn-default" data-dismiss="modal">取消</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Modal End -->
+	</body>
+	<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
+	<script type="text/javascript" src="js/jquery-smartMenu.js"></script>
+	<script type="text/javascript" src="jquery.dragsort-0.5.1.js"></script>
+	<!--<script type="text/javascript" src="js/jquery.johnDragsort.js"></script>-->
+	<script type="text/javascript" src="js/smartMenu-ext.js"></script>
+	<script type="text/javascript" src="uploadify/jquery.uploadify.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/jquery.johnDraggable.js"></script>
+	<script type="text/javascript" src="js/app.js"></script>
+</html>
