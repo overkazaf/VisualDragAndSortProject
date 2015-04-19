@@ -67,85 +67,91 @@
  			})();
  			return posArray;
  		}
- 		var positionHelper = {
- 			_getAbsPosition : function (elem){
- 				elem = $(elem).get(0);
- 				var r = {
- 					x : elem.offsetLeft, 
- 					y : elem.offsetTop
- 				};
 
- 				if (elem.offsetParent) {
- 					var op = elem.offsetParent;
- 					var t = {
-	 					x : op.offsetLeft, 
-	 					y : op.offsetTop
-	 				};
-
-	 				r.x += t.x;
-	 				r.y += t.y;
- 				}
-
- 				return r;
- 			},
- 			_getMousePosition : function (e){
- 				return {
- 					x : e.pageX, y : e.pageY
- 				};
- 			},
- 			_checkMouseOver : function (e){
- 				var r = this._getMousePosition(e);
- 				var posArray = buildPosArray();
- 				var p = -1;
- 				for (var i=0,len=posArray.length; i<len; i++) {
- 					var elem = posArray[i];
- 					if (r.x > elem.left && r.x < elem.right && r.y > elem.top && r.y < elem.bottom) {
- 						p = i;break;
- 					}
- 				}
- 				return p;
- 			}
- 		};
-
+ 		var widgetList = [];
  		this.each(function (i, cont){
- 			var _this = cont;
- 			this.onstart = function (){
- 				var that = this;
- 				$(that).on('mousedown', function (){
- 					var p = positionHelper._getAbsPosition(_this);
- 					var k = -1;
- 					var content = $(this).html();
- 					$(document).on('mousemove', function (ev){
- 						//append placeholder
- 						k = positionHelper._checkMouseOver(ev);
- 						if (k > -1 && !placeholderController._hasPlaceHodler()) {
- 							var holder = placeholderController._create();
-							var targetElem = wrapper.find(targetClass).eq(k);
-							holder.appendTo(targetElem);
- 						}
-
+ 			var that = this;
+ 			var Drag = {
+ 				obj : null,
+ 				init : function (o){
+ 					var oDiv = $('<div></div>');
+ 					oDiv.appendTo(wrapper);
+ 					var obj = Drag.obj = oDiv;
+ 					$(that).mousedown(Drag.start);
+ 				},
+ 				start : function (ev){
+ 					var o = Drag.obj;
+ 					var l = $(that).offset().left;
+ 					var t = $(that).offset().top;
+ 					$(o).css({
+ 						position : 'absolute',
+ 						left : l,
+ 						top : t,
+ 						width : $(that).outerWidth(),
+ 						height : $(that).outerHeight(),
+ 						'background-color' : '#FFF',
+ 						border : "1px dashed #000"
+ 					}).fadeIn();
+ 					$(o).data('disX', ev.pageX - $(o).offset().left);
+ 					$(o).data('disY', ev.pageY - $(o).offset().top);
+ 					$(document).on('mousemove',Drag.drag);
+ 					$(document).on('mouseup',Drag.end);
+ 					return false;
+ 				},
+ 				drag : function (ev){
+ 					var o = Drag.obj;
+ 					var nx = ev.pageX - $(o).data('disX');
+ 					var ny = ev.pageY - $(o).data('disY');
+ 					$(o).css({left : nx, top : ny});
+ 					return false;
+ 				},
+ 				end : function (ev){
+ 					var o = Drag.obj;
+ 					$(document).off('mousemove');
+ 					$(document).off('mouseup');
+ 					$(o).fadeOut('slow');
+ 					var k = Drag._checkMouseOver(ev);
+ 					if (k > -1) {
+ 						var targetElem = wrapper.find(targetClass).eq(k);
+ 						var url = './widget/' + $(that).attr("data-widget") + '.html';
+ 						$.ajax({
+ 							url : url,
+ 							type : "GET",
+ 							dataType : "html",
+ 							success : function (html){
+ 								var $dom = $(html);
+ 								$dom.smartMenu(menuData);
+ 								targetElem.append($dom);
+ 							}
+ 						}).done(function (){
+ 							if (opts.fnDragEnd && $.isFunction(opts.fnDragEnd)){
+		 						opts.fnDragEnd();
+		 					}
+ 						});
  						
- 						
- 					});
-
- 					$(document).on('mouseup', function (ev){
-						
-				 		k = positionHelper._checkMouseOver(ev);
-					 	if (k > -1) {
-					 		var targetElem = wrapper.find(targetClass).eq(k);
-							//calling ajax and replace this contents;
-							var html = $('<div operable="text,href"> Widget_'+content+'</div>');
-								targetElem.append(html);
-								html.smartMenu(menuData);
-							placeholderController._destroy();
-							//targetElements.eq(k).append('<div style="border:1px dashed #000;background:#FFAA00;width:100px;height:20px;"></div>');
-						}
-					});
-
-					return false;
- 				});
- 			}
- 			this.onstart();
+ 					}
+ 					
+ 				},
+ 				_checkMouseOver : function (ev){
+					var r = {
+						x : ev.pageX, y : ev.pageY
+					};
+					log(r);
+	 				var posArray = buildPosArray();
+	 				log(posArray);
+	 				var p = -1;
+	 				for (var i=0,len=posArray.length; i<len; i++) {
+	 					var elem = posArray[i];
+	 					if (r.x > elem.left && r.x < elem.right && r.y > elem.top && r.y < elem.bottom) {
+	 						p = i;break;
+	 					}
+	 				}
+	 				return p;
+		 			
+ 				}
+ 			};
+ 			Drag.init(this);
+ 			widgetList.push(Drag);
  		});
 
  		return this;

@@ -190,8 +190,51 @@
 		draggedList.find('.drag-part').each(function (){
 			$(this).smartMenu(menuData);
 		});
+
+		$(document).on('click', function (){
+			$.smartMenu.hide();
+		});
+		$(window).on('scroll', function (){
+			$.smartMenu.hide();
+		});
 	}
 
+	//mask controll
+	function mask (){
+		var $doc = $(document);
+		var $body = $(document.body);
+		var $win = $(window);
+		if (!$body.find('.mask').length) {
+			$body.append($('<div class="mask"></div>'));
+		}
+		var oMask = $body.find('.mask');
+		oMask.css({
+			"z-index" : 9999,
+			"background-color" : '#000',
+			"position" : "absolute",
+			"left" : 0, "top" : 0,
+			"width" : $doc.width(),
+			"height" : $doc.height(),
+			"opacity" : 0.8
+		}).fadeIn();
+	}
+
+	function unmask(){
+		var $doc = $(document);
+		var $win = $(window);
+		if ($doc.find('.mask').length) {
+			oMask.css({
+				'z-index' : -1
+			}).hide();
+		}
+	}
+
+	/*
+	*
+	*	This allows user to drag and drop an explicit widget into layout-template,
+	*	The callback function (fnDragEnd) points to a target widget witch has alreay been drop into a layout container	
+	*
+	*/
 	function initDragWidgets(){
 		var ctx = $('.widget-container');
 		var aWidgets = ctx.find('.widget-list-item');
@@ -200,6 +243,11 @@
 				context : 'body',
 				targetWrapperClass : '.wrapper',
 				targetClass : '.layout-template',
+				fnDragEnd : function (oTargetWidget){
+					//request html and append;
+					var html = $(this).html();
+
+				}
 			});
 		});
 	};

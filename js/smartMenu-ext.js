@@ -63,9 +63,11 @@ var menuData = [
 	   	func : function (){
 	   		var source = $(this).attr('data-source-code');
    			if (source == 'widget' || source == 'layout') {
-   				alert($(this).html());
+   				// alert($(this).html());
+   				mask();
    			} else {
-   				alert('This component dosent allow to edit source-code');
+   				//alert('This component dosent allow to edit source-code');
+   				mask();
    			}
 	   	}
    }],
@@ -192,15 +194,28 @@ function constructLayoutConfigPanelHtml(layoutid, params){
 							if(targetMaginParam != '')targetMaginParam += '^';
 							targetMaginParam += targetMarginValue;
 
-
-							aLayout.eq(i).attr({
-								style : 'float:left;min-height:100px;height:auto;background-color:pink;width:' + targetScaleValue + ';'
+							var targetLayout = aLayout.eq(i);
+							var originStyle = targetLayout.attr('style');
+							var targetStyle = "";
+							var styleArray = originStyle.split(";");
+							for (var i=0,len=styleArray.length; i<len; i++){
+								var p = styleArray[i].split(":");
+								var attr = p[0], val = p[1];
+								if (attr != 'width') {
+									targetStyle += attr + ":" + val + ";";
+								} else {
+									targetStyle += attr + ":" + targetScaleValue + ";";
+								}
+							}
+							alert(targetStyle);
+							targetLayout.attr({
+								style : targetStyle
 							}).css({
 								'margin-top': marginInputs.eq(i*4 + 0).val() + 'px',
 								'margin-bottom': marginInputs.eq(i*4 + 1).val() + 'px',
 								'margin-left': marginInputs.eq(i*4 + 2).val() + 'px',
 								'margin-right': marginInputs.eq(i*4 + 3).val() + 'px',
-							}).html(targetScaleValue);
+							});
 						});
 						oTemplate.attr('data-param', targetScaleParam + "$" + targetMaginParam);
 						$('#configModal').modal('hide');
