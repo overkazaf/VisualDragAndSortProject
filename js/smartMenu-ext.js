@@ -5,7 +5,8 @@
  * @version $Id$
  */
 //smartMenu-ext.js
-//Define some utils to combine with smartMenu plugin
+//		Define some utils to combine with smartMenu plugin,
+//		This part will implement some operation logic for operable elements to make changes 
 
 /* 
 * Smart Menu configurations 
@@ -17,15 +18,17 @@ var menuData = [
 	   	text : '编辑',
 	   	func : function (){
 	   		var type = $(this).attr('operable');
+	   		
+	   		var elemId = $(this).attr('data-widget-id');
 	   		if (type) {
-	   			var html = constructConfigPanelHtml(type);
+	   			var html = constructConfigPanelTemplate(type,elemId);
 	   			displayConfigPanel(html);
 	   		} else{
 	   			var layout = $(this).attr('data-type');
 	   			if (layout == 'layout-template') {
-	   				var id = $(this).parent().attr('id');
-	   				var params = $(this).parent().attr('data-param');
-	   				var html = constructLayoutConfigPanelHtml(id, params);
+	   				var id = $(this).parent().attr('data-layout-id');
+	   				var params = $(this).parent().attr('data-layout-param');
+	   				var html = constructLayoutConfigPanelTemplate(id, params);
 	   				displayLayoutConfigPanel(html);
 	   				
 	   			}
@@ -38,7 +41,7 @@ var menuData = [
 	   		var type = $(this).attr('operable');
 	   		if (type) {
 	   			if (type == 'link-panel') {
-	   				var html = constructConfigPanelHtml(type);
+	   				var html = constructConfigPanelTemplate(type);
 	   				displayConfigPanel(html);
 	   			} else {
 	   				alert('这一部件暂时不支持编辑功能');
@@ -52,8 +55,8 @@ var menuData = [
    [{
 	   	text : '删除',
 	   	func : function (){
-	   		alert($(this).html());
-	   		if (confirm('真的要删除这个部件?')){
+	   		var type  = $(this).attr('operable');
+	   		if (confirm('真的要删除这个'+type+'部件?')){
 	   			$(this).remove();
 	   		}
 	   	}
@@ -68,6 +71,8 @@ var menuData = [
    			} else {
    				//alert('This component dosent allow to edit source-code');
    				mask();
+   				var _this = $(this);
+   				initSourceCodePanel($(this).prop('outerHTML'));
    			}
 	   	}
    }],
@@ -76,7 +81,7 @@ var menuData = [
 /*
 *	This function is used to generate a layout configurable template
 */
-function constructLayoutConfigPanelHtml(layoutid, params){
+function constructLayoutConfigPanelTemplate(layoutid, params){
 	var html     = '', 
 		footer   = '',
 		fnOK     = null,
@@ -200,14 +205,15 @@ function constructLayoutConfigPanelHtml(layoutid, params){
 							var styleArray = originStyle.split(";");
 							for (var i=0,len=styleArray.length; i<len; i++){
 								var p = styleArray[i].split(":");
-								var attr = p[0], val = p[1];
-								if (attr != 'width') {
-									targetStyle += attr + ":" + val + ";";
-								} else {
-									targetStyle += attr + ":" + targetScaleValue + ";";
+								if (p.length == 2) {
+									var attr = p[0], val = p[1];
+									if (attr != 'width') {
+										targetStyle += attr + ":" + val + ";";
+									} else {
+										targetStyle += attr + ":" + targetScaleValue + ";";
+									}
 								}
 							}
-							alert(targetStyle);
 							targetLayout.attr({
 								style : targetStyle
 							}).css({
@@ -242,14 +248,19 @@ function constructLayoutConfigPanelHtml(layoutid, params){
 }
 
 
-/*
-* This function is used to generate a widget configurable template,
-* 
-*/
-function constructConfigPanelHtml(type){
+/**
+ * [constructConfigPanelTemplate description]
+ * @param  {[type]} type   [Operable type that indicates a specific widget]
+ * @param  {[type]} ext    [Extra params that need to be configured]
+ * @param  {[type]} elemId [Source Element that need to be configured, 
+ *                          will pass the parameters to the panel and then pass it back when legally finished]
+ * @return {[type]}        [description]
+ */
+function constructConfigPanelTemplate(type, elemId){
 	var html = '<div class="row">';
 		html += '<div class="span3">';
-
+	var elem = $('#'+elemId);
+	var ext = elem.attr('data-widget-param');
 	var operable = type.split(",");
 
 	if (operable.length == 2) {
@@ -259,12 +270,12 @@ function constructConfigPanelHtml(type){
 		html += '</div>';
 	} else if (operable.length == 1) {
 		if (operable[0] == 'flash') {
-			html += '<div class="row-fluid">';
-			html += '<div class="offset4 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
-			html += '</div><br>';
-			html += '<div class="row">';
-			html += '<div class="span3 offset1 text-center"><button class="btn upload btn-block btn-default">上传Flash</button></div>';
-			html += '</div><br>';
+			// html += '<div class="row-fluid">';
+			// html += '<div class="offset4 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
+			// html += '</div><br>';
+			// html += '<div class="row">';
+			// html += '<div class="span3 offset1 text-center"><button class="btn upload btn-block btn-default">上传Flash</button></div>';
+			// html += '</div><br>';
 		} else {
 			// default template
 			html += '<div class="row-fluid">';
@@ -287,6 +298,69 @@ function constructConfigPanelHtml(type){
 			html += '<div class="span3"><input type="text" class="form-control"></div>';
 			html += '</div><br>';
 		}
+
+
+
+		if (ext) {
+			// Some basic params is allowed to be reset
+			// w --> width, h --> height, bc --> background-color, bi --> background-image
+			var params = ext.split(';');
+
+			//history configurations
+			var historyConfig = elem.attr('data-history-config');
+			var configJson = {};
+			(function (config){
+				if (config && config.indexOf(';') >= 0) {
+					var p = config.split(';');
+					for (var i=0,len=p.length; i<len; i++) {
+						if (p[i].indexOf('=') >= 0) {
+							var prop = p[i].split('=');
+							if (prop.length == 2) {
+								var k = prop[0];
+								var v = prop[1];
+								configJson[k] = v;
+							}
+						}
+					}
+				}
+			})(historyConfig);
+			
+			log(configJson);
+			for (var i=0,len=params.length; i<len; i++) {
+				var param = params[i];
+				if (param) {
+					// row started
+					html += '<div class="row-fluid">';
+					if ('l' === param) {
+						html += '<div class="offset2 span4 text-right">链接:</div>';
+						html += '<div class="span3"><input type="text" id="conf-l" class="form-control" value="'+configJson['link']+'"></div>';
+					} else if ('w' === param) {
+						html += '<div class="offset2 span4 text-right">宽度:</div>';
+						html += '<div class="span3"><input type="text" id="conf-w" class="form-control" value="'+configJson['width']+'"></div>';
+					} else if ('h' === param) {
+						html += '<div class="offset2 span4 text-right">高度:</div>';
+						html += '<div class="span3"><input type="text" id="conf-h" class="form-control" value="'+configJson['height']+'"></div>';
+					} else if ('bc' === param) {
+						html += '<div class="offset2 span4 text-right">背景色:</div>';
+						html += '<div class="span3"><input type="text" id="conf-bc" class="form-control" value="'+configJson['bc']+'"></div>';
+					} else if ('bi' === param) {
+						html += '<div class="offset2 span4 text-right">背景图:</div>';
+						html += '<div class="span1"><input type="hidden" id="conf-bi" class="form-control" value="'+configJson['bi']+'"></div>';
+						html += '<div class="offset1 span3"><input type="file" id="upload" name="attr" class="form-control"></div><br><br>';
+						html += '<div class="offset4"><button class="btn upload btn-block btn-default">上传图片</button></div>';
+					} else {
+						// Unknown parameter
+						html += '<div class="offset3 span4 text-right">配置参数:</div>';
+						html += '<div class="span3"><input type="text" class="form-control"></div>';
+					}
+
+					// row ended
+					html += '</div><br>';
+				} else {
+					// The last senmicolon, need to do nothing 
+				}
+			}
+		}
 	}
 
 
@@ -296,7 +370,7 @@ function constructConfigPanelHtml(type){
 
 	//confirg footer
 
-	var footer = '<button class="btn btn-primary" data-dismiss="modal">确定</button><button class="btn btn-default" data-dismiss="modal">取消</button>';
+	var footer = '<button class="btn btn-primary">确定</button><button class="btn btn-default" data-dismiss="modal">取消</button>';
 	var setupUpload = null, uploadDestroy = null;
 	var fnOK = null, fnCancel = null, fnUpload = null;
 	if (operable.length == 2) {
@@ -318,9 +392,56 @@ function constructConfigPanelHtml(type){
 			fnUpload = function (){
 				$("#upload").uploadify("upload", '*');
 			},
-			fnOK = function (){
+			fnOK = function (e){
 				$("#upload").uploadify('destroy');
-				log('Destroy');
+				if (ext) {
+					var history = '';
+					var link = $('#conf-l').val() || '';
+					var width = $('#conf-w').val() || '';
+					var height = $('#conf-h').val() || '';
+					var bgcolor = $('#conf-bc').val() || '';
+					var bgimage = $('#conf-bi').val() || '';
+					var flag = !1;
+					//validate parameters
+					(function (a,b,c,d,e){
+						var are = /([\w-]+\.)+[\w-]+([\w-.?\%\&\=]*)?/gi;
+						var bre = /\d+/gi;
+						var cre = /\d+/gi;
+						var dre = /\#[0-9a-fA-F]{6}/gi;
+						var ere = /\.(jpg|gif|jpeg)$/gi;
+						var errorMessage = '参数非法，请检查';
+						if(a && !are.test(a)){
+							alert(errorMessage);
+							flag = true;
+						}
+
+						
+					})(link, width, height, bgcolor, bgimage);
+
+
+					if (flag){
+						return false;
+					}
+
+					if(link)
+						history += 'link='+link+";";
+
+					if(width)
+						history += 'width='+width+";";
+					
+					if(height)
+						history += 'height='+height+";";
+					
+					if(bgcolor)
+						history += 'bc='+bgcolor+";";
+					
+					if(bgimage)
+						history += 'bi='+bgimage+";";
+					
+					elem.attr('data-history-config', history);
+				}
+				alert('上传中');
+				$('#configModal').modal('hide');
 			};
 
 			fnCancel = function (){
@@ -335,11 +456,49 @@ function constructConfigPanelHtml(type){
 	return {
 		body : html,
 		footer : footer,
-		setupUpload : setupUpload,
+		onRenderReady : setupUpload ,
 		buttonFn : {
 			fnUpload : fnUpload,
 			fnOK : fnOK,
 			fnCancel : fnCancel
 		}
 	};
+}
+
+
+/**
+ * [initSourceCodePanel description]
+ * @return {[type]}
+ */
+function initSourceCodePanel(htmlCode, callback){
+	var oPanel =  $('#sourceCodePanel');
+	var w = ($(window).width() - oPanel.width())/2;
+	var h = ($(window).height() - oPanel.height())/2;
+
+	w = w>10 ? w : 10;
+	h = h>10 ? h : 10;
+	oPanel.css({
+		display : "block",
+		left : w,
+		top : h
+	}).appendTo($('.mask')).show();
+	$(window).scrollTop(0);
+	var oCode = oPanel.find(".well>pre");
+	oCode.text(htmlCode);
+	if (!oPanel.data('button-binding')) {
+		var aBtn = oPanel.find(".panel-footer>button");
+		aBtn.each(function (index){
+			$(this).on('click', function (){
+				if (index === 1) {
+				} else if (index === 0) {
+					if (callback && $.isFunction(callback)){
+						callback(oCode.html());
+					}
+				}
+				oPanel.hide();
+				unmask();
+			});
+		});
+		oPanel.data('button-binding',true);
+	}
 }

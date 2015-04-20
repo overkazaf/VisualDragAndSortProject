@@ -2,14 +2,15 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>Document</title>
+		<meta http-equiv="X-UA-Compatibal" content="IE=EmulateIE7">
+		<title>Visual Drag And Drop Proj</title>
 		<link rel="stylesheet" href="css/bootstrap.min.css">
 		<link rel="stylesheet" href="css/smartMenu.css" type="text/css" />
 		<style type="text/css">
 			*{margin:0;padding:0;}
 			li{list-style: none;}
 			.header{height:auto;width:100%;min-width: 960px;min-height:140px;position: fixed;left:0;top:0;}
-			.header .publish-part{height:54px;width:100%;background-color:#eee;padding-top:10px;}
+			.header .publish-part{height:42px;width:100%;background-color:#eee;padding-top:10px;}
 			.header .publish-area input{position:relative;float:left;margin-right:4px;width:240px;}
 			.header .publish-area button.inp-btn{float:left;margin-left:4px;}
 			.header .tool-part{height:auto;width:100%;color:#fff;background-color:#444851;}
@@ -17,31 +18,54 @@
 			ul.tool-menu li.tool-menu-item{height:45px;line-height:45px;cursor:pointer;float:left;margin-right:2px;min-width:80px;text-align: center;}
 			ul.tool-menu li.tool-menu-item:hover{background-color:#09f;color:#fff;}
 			.header .selected{background-color:#09f;color:#fff;}
-			.header .tool-container{max-height:220px;height:160px;overflow:auto;background-color:#FFF;color:#000;}
+			.header .tool-container{max-height:220px;height:160px;min-width:90%;overflow:auto;background-color:#DDF;color:#000;box-shadow: 0 0 10px #000;}
 			
 			/* Layout CSS */
 			.widget-contents ul.widget-list,
-			.layout-container ul.layout-list{width:90%;margin-top:10px;}
+			.layout-container ul.layout-list,
+			.theme-container ul.theme-list {width:90%;margin-top:18px;}
 			
 			.widget-contents ul.widget-list li.widget-list-item,
-			.layout-container ul.layout-list li.layout-list-item{cursor:pointer;background-color:pink;float:left;width:200px;height:120px;margin-left: 10px;}
+			.layout-container ul.layout-list li.layout-list-item{cursor:pointer;background-color:pink;float:left;width:180px;height:120px;margin-left: 10px;}
 			/* Layout CSS end*/
 			/* Widget CSS */
 			.widget-container ul.widget-items-tab {width:90%;display: block;}
 			.widget-container ul.widget-items-tab li.widget-item-radio{cursor:pointer;min-width:80px;height:45px;line-height:45px;width:auto;float: left;margin-left:20px;}
 			.widget-container ul.widget-items-tab li.widget-item-radio input{margin:4px;}
 			.widget-container ul.widget-items-tab li.widget-item-radio small{display:inline-block;font-size:14px;}
-			.widget-container .widget-contents{display: block;float: left;height:200px;width:100%;}
-				/* Widget item CSS */
-				.widget-contents ul.widget-list li.widget-list-item{height:80px;background-color: #09F;width:100px;}
+			.widget-container .widget-contents{display: block;float: left;height:110px;width:100%;}
+			/* Widget item CSS */
+			.widget-contents ul.widget-list li.widget-list-item{height:80px;background-color: #09F;width:100px;}
 			/* Widget CSS end*/
+
+
+			/* Theme item CSS */
+			.theme-contents ul.theme-list li.theme-list-item{height:120px;background-color: orange;width:180px;float:left;margin-left: 10px;}
+			/* Theme CSS end*/
+
+
 			/* main wrapper */
-			.wrapper{margin-top: 200px;margin-bottom:200px;padding:5px;background-color:#CCC;width:100%;height:auto;}
-			.wrapper .drag-part{min-height:120px;height:auto;width:100%;margin:5px auto;border:1px dashed #000;}
+			.wrapper{z-index:-1;background-color:#f8f8f8;left:0;margin-top: 200px;margin-bottom:200px;padding:5px;left:0;width:98%;height:auto;}
+			ul#dragged-list{margin:0;padding:0;}
+			.wrapper .drag-part{min-height:120px;height:auto;width:100%;margin:5px auto;border:1px dashed #000;background-color:#FFF;}
 			.placeHolder { background-color:white !important; border:dashed 1px gray !important; }
 
-			.clear{ clear:both} 
+			.clearfix{ 
+				*zoom:1;
+				&:before,
+				&:after{
+					display:table;
+					content:"";
+				}
+				&:after {
+					clear : both;
+				}
+			} 
 			input.inp-mg{width:20px;margin-left:2px;margin-right:10px;display: inline;}
+
+
+			/* Souce Code Editor */
+			.source-code-panel{display:none;position:absolute;width:760px;height:400px;overflow:auto;background:#AAA;padding:10px;border-radius: 4px;box-shadow: 0 0 20px #fff;}
 		</style>
 	</head>
 	<body>
@@ -96,7 +120,10 @@
 						</div>
 					</div>
 					<div class="tool-container theme-container">
-						主题
+						<div class="theme-contents">
+							<ul class="theme-list">
+							</ul>
+						</div>
 					</div>
 					<div class="tool-container background-container">
 						背景
@@ -109,9 +136,6 @@
 				<li class="drag-part" operable="flash">bread</li>
 				<li class="drag-part" data-source-code='widget'>vegetables</li>
 				<li class="drag-part" operable="text,href">meat</li>
-				<li class="drag-part">milk</li>
-				<li class="drag-part">butter</li>
-				<li class="drag-part">ice cream</li>
 			</ul>
 		</div>
 		<!-- Configuration Modal -->
@@ -136,6 +160,21 @@
 			</div>
 		</div>
 		<!-- Modal End -->
+
+		<!-- Source Code Panel -->
+		<div class="source-code-panel" id="sourceCodePanel">
+			<div class="well text-left">
+				<pre id="srouceCode" contentEditable>
+					1.sdfasdf
+					2.324234
+					3.sdfssdfsdf
+				</pre>
+			</div>
+			<div class="well text-center panel-footer">
+				<button class="btn btn-primary">确定</button>
+				<button class="btn btn-default">取消</button>
+			</div>
+		</div>
 	</body>
 	<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
 	<script type="text/javascript" src="js/jquery-smartMenu.js"></script>

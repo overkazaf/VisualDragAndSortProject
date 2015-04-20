@@ -8,13 +8,21 @@
  /* Draggable plugin for widget dragging in TrueCMS2.0*/
  (function ($){
  	$.fn.johnDraggable = function (options){
+
+ 		if (options == 'destroy') {
+ 			this.each(function (){
+ 				$(this).off('mousedown');
+ 			});
+			return;
+ 		}
+
+
  		var items = [];
  		var opts = $.extend({}, $.fn.johnDraggable.defaluts, options);
  		var ctx = opts.context;
  		var wrapper = $(ctx).find(opts.targetWrapperClass);
  		var targetClass = opts.targetClass;
  		var targetElements = wrapper.find(targetClass);
-
 
  		//Operate with placeholder
  		var placeholderController = {
@@ -73,13 +81,18 @@
  			var that = this;
  			var Drag = {
  				obj : null,
+ 				container : cont,
  				init : function (o){
- 					var oDiv = $('<div></div>');
+ 					var oDiv = $('<div>').attr('data-emptydiv', true);
  					oDiv.appendTo(wrapper);
  					var obj = Drag.obj = oDiv;
  					$(that).mousedown(Drag.start);
  				},
  				start : function (ev){
+ 					if (ev.which != 1)
+ 						return;
+ 					ev.preventDefault();
+
  					var o = Drag.obj;
  					var l = $(that).offset().left;
  					var t = $(that).offset().top;
@@ -90,8 +103,9 @@
  						width : $(that).outerWidth(),
  						height : $(that).outerHeight(),
  						'background-color' : '#FFF',
- 						border : "1px dashed #000"
- 					}).fadeIn();
+ 						border : "1px dashed #000",
+ 						cursor : "move"
+ 					}).fadeIn().attr('data-mousemove', 'move');
  					$(o).data('disX', ev.pageX - $(o).offset().left);
  					$(o).data('disY', ev.pageY - $(o).offset().top);
  					$(document).on('mousemove',Drag.drag);
@@ -109,36 +123,69 @@
  					var o = Drag.obj;
  					$(document).off('mousemove');
  					$(document).off('mouseup');
- 					$(o).fadeOut('slow');
+ 					$(o).fadeOut('slow').removeAttr('data-mousemove');
  					var k = Drag._checkMouseOver(ev);
  					if (k > -1) {
  						var targetElem = wrapper.find(targetClass).eq(k);
- 						var url = './widget/' + $(that).attr("data-widget") + '.html';
- 						$.ajax({
- 							url : url,
- 							type : "GET",
- 							dataType : "html",
- 							success : function (html){
- 								var $dom = $(html);
- 								$dom.smartMenu(menuData);
- 								targetElem.append($dom);
- 							}
- 						}).done(function (){
- 							if (opts.fnDragEnd && $.isFunction(opts.fnDragEnd)){
-		 						opts.fnDragEnd();
-		 					}
- 						});
+ 						if ($(that).attr("data-widget")) {
+ 							var url = './widget/' + $(that).attr("data-widget") + '.html';
+ 							$.ajax({
+	 							url : url + "?t="+Math.random(),
+	 							type : "GET",
+	 							dataType : "text",
+	 							success : function (html){
+	 								var $dom = $(html);
+	 								var widgetId = generatorId(null, null ,'Widget','Generated');
+	 								$dom.attr('id', widgetId).attr('data-widget-id', widgetId);
+	 								var oWrapper = $('.wrapper');
+	 								// Check if the wrapper contains some styles/links/scripts
+	 								
+	 								// 1.Check styles
+	 								var aStyle = $dom.find('style');
+	 								aStyle.each(function (){
+	 									var styleId = $(this).attr('data-styleid');
+	 									log(styleId);
+	 									if (!oWrapper.find('style[data-styleid='+styleId+']').length) {
+	 										$(this).appendTo(oWrapper);
+	 									}
+	 									log(oWrapper.find('style[data-styleid='+styleId+']').length);
+	 								});
+	 								$dom.find('style').remove();
+
+
+	 								// 2.Check links
+	 								// 3.Check scripts
+
+
+	 								$dom.smartMenu(menuData);
+	 								targetElem.append($dom);
+	 								$dom.johnDraggable();
+	 							}
+	 						}).done(function (){
+	 							if (opts.fnDragEnd && $.isFunction(opts.fnDragEnd)){
+			 						opts.fnDragEnd();
+			 					}
+	 						});
+ 						} else {
+ 							$clone = $(that).clone(true);
+ 							$clone.appendTo(targetElem);
+ 							$(that).remove();
+ 							//Destroy last event;
+ 							$clone.off('mousedown');
+
+ 							$clone.johnDraggable();
+ 							$clone.smartMenu(menuData);
+ 						}
+ 						
  						
  					}
- 					
+ 					return false;
  				},
  				_checkMouseOver : function (ev){
 					var r = {
 						x : ev.pageX, y : ev.pageY
 					};
-					log(r);
 	 				var posArray = buildPosArray();
-	 				log(posArray);
 	 				var p = -1;
 	 				for (var i=0,len=posArray.length; i<len; i++) {
 	 					var elem = posArray[i];

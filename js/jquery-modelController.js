@@ -24,10 +24,9 @@
  			},
  			success : function (json){
  				if (typeof json != 'undefined') {
- 					//fix styles and scripts
+ 					// Fix styles and scripts
+ 					// Not implement yet 2015/4/19
 
-
- 					
  					if (callback && $.isFunction(callback)) {
 	 					callback(json.html);
 	 				}
