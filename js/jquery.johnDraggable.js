@@ -77,15 +77,18 @@
  		}
 
  		var widgetList = [];
+ 		var oDraggablePlaceHolder = null;
  		this.each(function (i, cont){
  			var that = this;
  			var Drag = {
  				obj : null,
  				container : cont,
  				init : function (o){
- 					var oDiv = $('<div>').attr('data-emptydiv', true);
- 					oDiv.appendTo(wrapper);
- 					var obj = Drag.obj = oDiv;
+ 					if (!oDraggablePlaceHolder) {
+ 						oDraggablePlaceHolder = $('<div>').attr('data-emptydiv', true);
+ 						oDraggablePlaceHolder.appendTo(wrapper);
+ 					}
+ 					var obj = Drag.obj = oDraggablePlaceHolder;
  					$(that).mousedown(Drag.start);
  				},
  				start : function (ev){
@@ -131,7 +134,9 @@
  							var url = './widget/' + $(that).attr("data-widget") + '.html';
  							$.ajax({
 	 							url : url + "?t="+Math.random(),
-	 							type : "GET",
+	 							type : "POST",
+	 							cache : false,
+	 							async : false,
 	 							dataType : "text",
 	 							success : function (html){
 	 								var $dom = $(html);
@@ -141,16 +146,16 @@
 	 								// Check if the wrapper contains some styles/links/scripts
 	 								
 	 								// 1.Check styles
-	 								var aStyle = $dom.find('style');
-	 								aStyle.each(function (){
-	 									var styleId = $(this).attr('data-styleid');
-	 									log(styleId);
-	 									if (!oWrapper.find('style[data-styleid='+styleId+']').length) {
-	 										$(this).appendTo(oWrapper);
-	 									}
-	 									log(oWrapper.find('style[data-styleid='+styleId+']').length);
-	 								});
-	 								$dom.find('style').remove();
+	 								// var aStyle = $dom.find('style');
+	 								// aStyle.each(function (){
+	 								// 	var styleId = $(this).attr('data-styleid');
+	 								// 	log(styleId);
+	 								// 	if (!oWrapper.find('style[data-styleid='+styleId+']').length) {
+	 								// 		$(this).appendTo(oWrapper);
+	 								// 	}
+	 								// 	log(oWrapper.find('style[data-styleid='+styleId+']').length);
+	 								// });
+	 								// $dom.find('style').remove();
 
 
 	 								// 2.Check links
@@ -160,6 +165,7 @@
 	 								$dom.smartMenu(menuData);
 	 								targetElem.append($dom);
 	 								$dom.johnDraggable();
+	 								$dom.highlight();
 	 							}
 	 						}).done(function (){
 	 							if (opts.fnDragEnd && $.isFunction(opts.fnDragEnd)){
@@ -171,7 +177,7 @@
  							$clone.appendTo(targetElem);
  							$(that).remove();
  							//Destroy last event;
- 							$clone.off('mousedown');
+ 							$clone.off('mousedown').removeData('disX').removeData('disY');
 
  							$clone.johnDraggable();
  							$clone.smartMenu(menuData);

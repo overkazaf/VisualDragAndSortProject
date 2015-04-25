@@ -8,6 +8,35 @@
 //		Define some utils to combine with smartMenu plugin,
 //		This part will implement some operation logic for operable elements to make changes 
 
+
+/**
+	 * [parseKV2Json description]
+	 * @param  {[type]} str [A ';' and '=' separated string that need to be parsed ] 
+	 * @return {[type]}     [An json object that formats well in key-value form]
+	 */
+	function parseKV2Json(str){
+		var obj = {};
+		if (str.indexOf(';') >= 0 ) {
+			var array = str.split(';'),
+				i,
+				len = array.length;
+
+			for (i=0;i<len;i++) {
+				if (array[i].indexOf('=') >= 0) {
+					var p = array[i].split('=');
+					if (p.length == 2) {
+						// Valid format
+						obj[p[0]] = p[1];
+					} else {
+						continue;
+					}
+				}
+			}
+		}
+		return obj;
+	}
+
+
 /* 
 * Smart Menu configurations 
 * This is a global var
@@ -258,99 +287,199 @@ function constructLayoutConfigPanelTemplate(layoutid, params){
  */
 function constructConfigPanelTemplate(type, elemId){
 	var html = '<div class="row">';
-		html += '<div class="span3">';
+		//html += '<div class="span3">';
 	var elem = $('#'+elemId);
 	var ext = elem.attr('data-widget-param');
 	var operable = type.split(",");
+	var ctxUrl = getContextPath();
 
 	if (operable.length == 2) {
 		html += '<div class="row-fluid">';
-		html += '<div class="offset3 span4 text-right">链接地址：</div>';
-		html += '<div class="span4"><input type="text" class="form-control"></div>';
+		html += '<div class="offset1 span2 text-right">链接地址：</div>';
+		html += '<div class="span2"><input type="text" class="form-control"></div>';
 		html += '</div>';
 	} else if (operable.length == 1) {
-		if (operable[0] == 'flash') {
-			// html += '<div class="row-fluid">';
-			// html += '<div class="offset4 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
-			// html += '</div><br>';
-			// html += '<div class="row">';
-			// html += '<div class="span3 offset1 text-center"><button class="btn upload btn-block btn-default">上传Flash</button></div>';
-			// html += '</div><br>';
+		var operType = operable[0];
+		if (operType == 'flash') {
+			html += '<div class="row-fluid">';
+			html += '<div class="offset3 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
+			html += '<div><input type="hidden" id="conf-url" name="url" class="form-control"></div>';
+			html += '<div class="span3 text-center"><button class="btn upload btn-block btn-primary">上传Flash</button></div>';
+			html += '</div><br>';
+		} else if (operType == 'upload') {
+			// Pictures
+			html += '<div class="row-fluid">';
+			html += '<div class="offset3 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
+			html += '<div><input type="hidden" id="conf-url" name="url" class="form-control"></div>';
+			html += '<div class="span3 text-center"><button class="btn upload btn-block btn-primary">上传图片</button></div>';
+			html += '</div><br>';
+		} else if (operType == 'powerpoint') {
+
+
+		} else if (operType == 'navbar') {
+			$.ajax({
+				url : ctxUrl + '/siteColumnController/getSite.do',
+				cache : false,
+				async : false,
+				type : "POST",
+				data : {'siteId' : $('#site').val()},
+				success : function (result){
+					var res = $.parseJSON(result);
+					html += '<div class="row-fluid">';
+					html += '<form id="form1">';
+					html += '<div class="span2 text-right">站点：</div>';
+					html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+					for (var i = 0, len = res.length; i < len; i++) {
+						html += '<option value="' + res[i]['siteId'] + ' ">' + res[i]['siteName'] + '</option>';
+					}
+					html += '</select>';
+					html += '</div><br>';
+
+					html += '<div class="row-fluid">';
+					html += '<div class="span2 text-right">栏目：</div>';
+					$.ajax({
+						url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+						cache : false,
+						async : false,
+						type : 'POST',
+						data : {'siteId': res[0]['siteId']},
+						success : function (d){
+							var data = $.parseJSON(d);
+							html += '<select id="siteColumn" name="siteColumn">';
+							for (var i = 0, len = data.length; i < len; i++) {
+								html += '<option value="' + data[i]['columnId'] + ' ">' + data[i]['columnName'] + '</option>';
+							}
+							html += '</select>';
+							html += '</div><br>';
+
+
+							html += '</form>';
+							html += '</div>';
+						}
+					});
+				}
+			});
+		} else if (operType == 'chunk') {
+			$.ajax({
+				url : ctxUrl + '/siteColumnController/getSite.do',
+				cache : false,
+				async : false,
+				type : "POST",
+				data : {'siteId' : $('#site').val()},
+				success : function (result){
+					var res = $.parseJSON(result);
+					html += '<div class="row-fluid">';
+					html += '<form id="form1">';
+					html += '<div class="span2 text-right">站点：</div>';
+					html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+					for (var i = 0, len = res.length; i < len; i++) {
+						html += '<option value="' + res[i]['siteId'] + ' ">' + res[i]['siteName'] + '</option>';
+					}
+					html += '</select>';
+					html += '</div><br>';
+
+					html += '<div class="row-fluid">';
+					html += '<div class="span1 text-right">栏目：</div>';
+					$.ajax({
+						url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+						cache : false,
+						async : false,
+						type : 'POST',
+						data : {'siteId': res[0]['siteId']},
+						success : function (d){
+							var data = $.parseJSON(d);
+							html += '<select id="siteColumn" name="siteColumn">';
+							for (var i = 0, len = data.length; i < len; i++) {
+								html += '<option value="' + data[i]['columnId'] + ' ">' + data[i]['columnName'] + '</option>';
+							}
+							html += '</select>';
+							html += '</div><br>';
+
+
+							html += '<div class="row-fluid">';
+							html += '<div class="span2 text-right">条数：</div>';
+							html += '<div class="span3"><input type="text" class="form-control"></div>';
+							html += '</div><br>';
+
+							html += '<div class="row-fluid">';
+							html += '<div class="span2 text-right">长度：</div>';
+							html += '<div class="span3"><input type="text" class="form-control"></div>';
+							html += '</div><br>';
+
+							html += '<div class="row-fluid">';
+							html += '<div class="span2 text-right">时间：</div>';
+							html += '<div class="span3"><select name="date">';
+							html += '<option value=""></option>';
+							html += '<option value="yyyy-MM-dd">2014-01-01</option>';
+							html += '<option value="MM-dd">01-01</option>';
+							html += '<option value="yyyy年MM月dd日">2014年01月01日</option>';
+							html += '<option value="yyyyMMdd">20140101</option>';
+							html += '</select></div>';
+							html += '</div><br>';
+							html += '</form>';
+							html += '</div>';
+						}
+					});
+				}
+			});
 		} else {
 			// default template
 			html += '<div class="row-fluid">';
-			html += '<div class="span1 text-right">配置参数：</div>';
-			html += '<div class="span3"><input type="text" class="form-control"></div>';
+			html += '<div class="offset1 span2 text-right">配置参数：</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
 			html += '</div><br>';
 
 			html += '<div class="row-fluid">';
-			html += '<div class="span1 text-right">配置参数：</div>';
-			html += '<div class="span3"><input type="text" class="form-control"></div>';
+			html += '<div class="offset1 span2 text-right">配置参数：</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
 			html += '</div><br>';
 
 			html += '<div class="row-fluid">';
-			html += '<div class="span1 text-right">配置参数：</div>';
-			html += '<div class="span3"><input type="text" class="form-control"></div>';
+			html += '<div class="offset1 span2 text-right">配置参数：</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
 			html += '</div><br>';
 
 			html += '<div class="row-fluid">';
-			html += '<div class="span1 text-right">配置参数：</div>';
-			html += '<div class="span3"><input type="text" class="form-control"></div>';
+			html += '<div class="offset1 span2 text-right">配置参数：</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
 			html += '</div><br>';
 		}
 
 
 
+		// Some basic params is allowed to be reset
 		if (ext) {
-			// Some basic params is allowed to be reset
 			// w --> width, h --> height, bc --> background-color, bi --> background-image
 			var params = ext.split(';');
 
 			//history configurations
 			var historyConfig = elem.attr('data-history-config');
-			var configJson = {};
-			(function (config){
-				if (config && config.indexOf(';') >= 0) {
-					var p = config.split(';');
-					for (var i=0,len=p.length; i<len; i++) {
-						if (p[i].indexOf('=') >= 0) {
-							var prop = p[i].split('=');
-							if (prop.length == 2) {
-								var k = prop[0];
-								var v = prop[1];
-								configJson[k] = v;
-							}
-						}
-					}
-				}
-			})(historyConfig);
-			
-			log(configJson);
+			var configJson = parseKV2Json(historyConfig);
 			for (var i=0,len=params.length; i<len; i++) {
 				var param = params[i];
 				if (param) {
 					// row started
 					html += '<div class="row-fluid">';
-					if ('l' === param) {
-						html += '<div class="offset2 span4 text-right">链接:</div>';
-						html += '<div class="span3"><input type="text" id="conf-l" class="form-control" value="'+configJson['link']+'"></div>';
-					} else if ('w' === param) {
-						html += '<div class="offset2 span4 text-right">宽度:</div>';
-						html += '<div class="span3"><input type="text" id="conf-w" class="form-control" value="'+configJson['width']+'"></div>';
-					} else if ('h' === param) {
-						html += '<div class="offset2 span4 text-right">高度:</div>';
-						html += '<div class="span3"><input type="text" id="conf-h" class="form-control" value="'+configJson['height']+'"></div>';
+					if ('link' === param) {
+						html += '<div class="offset1 span2 text-right">链接:</div>';
+						html += '<div class="span3"><input type="text" id="conf-link" class="form-control" value="'+configJson['link']+'"></div>';
+					} else if ('width' === param) {
+						html += '<div class="offset1 span2 text-right">宽度:</div>';
+						html += '<div class="span3"><input type="text" id="conf-width" class="form-control" value="'+configJson['width']+'"></div>';
+					} else if ('height' === param) {
+						html += '<div class="offset1 span2 text-right">高度:</div>';
+						html += '<div class="span3"><input type="text" id="conf-height" class="form-control" value="'+configJson['height']+'"></div>';
 					} else if ('bc' === param) {
-						html += '<div class="offset2 span4 text-right">背景色:</div>';
+						html += '<div class="offset1 span2 text-right">背景色:</div>';
 						html += '<div class="span3"><input type="text" id="conf-bc" class="form-control" value="'+configJson['bc']+'"></div>';
 					} else if ('bi' === param) {
-						html += '<div class="offset2 span4 text-right">背景图:</div>';
+						html += '<div class="offset1 span2 text-right">背景图:</div>';
 						html += '<div class="span1"><input type="hidden" id="conf-bi" class="form-control" value="'+configJson['bi']+'"></div>';
-						html += '<div class="offset1 span3"><input type="file" id="upload" name="attr" class="form-control"></div><br><br>';
-						html += '<div class="offset4"><button class="btn upload btn-block btn-default">上传图片</button></div>';
+						html += '<div class="span3"><input type="file" id="upload" name="attr" class="form-control"></div><br><br>';
+						html += '<div class="offset3 span5"><button class="btn upload btn-block btn-default">上传图片</button></div>';
 					} else {
 						// Unknown parameter
-						html += '<div class="offset3 span4 text-right">配置参数:</div>';
+						html += '<div class="offset1 span2 text-right">配置参数:</div>';
 						html += '<div class="span3"><input type="text" class="form-control"></div>';
 					}
 
@@ -364,28 +493,29 @@ function constructConfigPanelTemplate(type, elemId){
 	}
 
 
-	html += '</div>';//end for col-md-12 class
 	html += '</div>';//end for row class
 
 
-	//confirg footer
-
+	//confirg footer, especially for the button events
 	var footer = '<button class="btn btn-primary">确定</button><button class="btn btn-default" data-dismiss="modal">取消</button>';
 	var setupUpload = null, uploadDestroy = null;
 	var fnOK = null, fnCancel = null, fnUpload = null;
 	if (operable.length == 2) {
  		
 	} else if (operable.length == 1) {
-		if (operable[0] == 'flash') {
+		var operType = operable[0];
+		if (operType == 'flash') {
 			setupUpload = function (){
 				$("#upload").uploadify({
 			        height        : 30,
-			        buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-primary offset1">选择Flash</button></div>',
+			        buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-default">选择Flash</button></div>',
 			        swf           : './uploadify/uploadify.swf',
 			        uploader      : './uploadify/uploadify.php',
 			        width         : 120,
 			        'onUploadSuccess' : function(file, data, response) {
-			            alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+			            //alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+			            var res = $.parseJSON(data);
+			            $('#conf-url').val(res.url);
 			        }
 			    });
 			},
@@ -395,20 +525,36 @@ function constructConfigPanelTemplate(type, elemId){
 			fnOK = function (e){
 				$("#upload").uploadify('destroy');
 				if (ext) {
-					var history = '';
-					var link = $('#conf-l').val() || '';
-					var width = $('#conf-w').val() || '';
-					var height = $('#conf-h').val() || '';
-					var bgcolor = $('#conf-bc').val() || '';
-					var bgimage = $('#conf-bi').val() || '';
+					var history = '',
+						link = '',
+						width = '',
+						height = '',
+						bgcolor = '',
+						bgimage = '';
 					var flag = !1;
+
+					if ($('#conf-link').length) 
+						link = $.trim($('#conf-link').val());
+					
+					if ($('#conf-width').length) 
+						width = $.trim($('#conf-width').val());
+
+					if ($('#conf-height').length) 
+						height = $.trim($('#conf-height').val());
+
+					if ($('#conf-bc').length) 
+						bgcolor = $.trim($('#conf-bc').val());
+
+					if ($('#conf-bi').length) 
+						bgimage = $.trim($('#conf-bi').val());
+					
 					//validate parameters
 					(function (a,b,c,d,e){
 						var are = /([\w-]+\.)+[\w-]+([\w-.?\%\&\=]*)?/gi;
 						var bre = /\d+/gi;
 						var cre = /\d+/gi;
 						var dre = /\#[0-9a-fA-F]{6}/gi;
-						var ere = /\.(jpg|gif|jpeg)$/gi;
+						var ere = /\.(bmp|jpg|gif|jpeg)$/gi;
 						var errorMessage = '参数非法，请检查';
 						if(a && !are.test(a)){
 							alert(errorMessage);
@@ -448,8 +594,171 @@ function constructConfigPanelTemplate(type, elemId){
 				$("#upload").uploadify('destroy');
 				log('Destroy');
 			};
-		} else {
-			
+		} else if (operType == 'upload') {
+			setupUpload = function (){
+				$("#upload").uploadify({
+			        height        : 30,
+			        buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-default">选择图片</button></div>',
+			        swf           : './uploadify/uploadify.swf',
+			        uploader      : './uploadify/uploadify.php',
+			        width         : 120,
+			        'onUploadSuccess' : function(file, data, response) {
+			            //alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+			            var res = $.parseJSON(data);
+			            alert(res);
+			            $('#conf-url').val(res.url);
+			        }
+			    });
+			},
+			fnUpload = function (){
+				$("#upload").uploadify("upload", '*');
+			},
+			fnOK = function (e){
+				$("#upload").uploadify('destroy');
+				if (ext) {
+					var history = '',
+						link = '',
+						width = '',
+						height = '',
+						bgcolor = '',
+						bgimage = '';
+					var flag = !1;
+
+					if ($('#conf-link').length) 
+						link = $.trim($('#conf-link').val());
+					
+					if ($('#conf-width').length) 
+						width = $.trim($('#conf-width').val());
+
+					if ($('#conf-height').length) 
+						height = $.trim($('#conf-height').val());
+
+					if ($('#conf-bc').length) 
+						bgcolor = $.trim($('#conf-bc').val());
+
+					if ($('#conf-bi').length) 
+						bgimage = $.trim($('#conf-bi').val());
+
+
+					//validate parameters
+					(function (a,b,c,d){
+						var are = /([\w-]+\.)+[\w-]+([\w-.?\%\&\=]*)?/gi;
+						var bre = /\d+/gi;
+						var cre = /\d+/gi;
+						var dre = /\#[0-9a-fA-F]{6}/gi;
+						var ere = /\.(bmp|jpg|gif|jpeg)$/gi;
+						var errorMessage = '参数非法，请检查';
+						if(a && !are.test(a)){
+							alert(errorMessage);
+							flag = true;
+						}
+
+						
+					})(link, width, height, bgimage);
+
+
+					if (flag){
+						return false;
+					}
+
+					if(link)
+						history += 'link='+link+";";
+
+					if(width)
+						history += 'width='+width+";";
+					
+					if(height)
+						history += 'height='+height+";";
+					
+					if(bgcolor)
+						history += 'bc='+bgcolor+";";
+					
+					if(bgimage)
+						history += 'bi='+bgimage+";";
+					
+					elem.attr('data-history-config', history);
+
+					//Change image bi and size
+					var imgUrl = $('#conf-url').val();
+					if (imgUrl){
+						elem.css('background-image', 'url(/' + imgUrl + ')');
+					}
+
+					if (width && height) {
+						var oW = elem.width();
+						var oH = elem.height();
+						if (oW < parseInt(width) || oH < parseInt(height)) {
+							alert('提示：设置的图片大小超出原部件，将改变原部件尺寸');
+							elem.css({
+								width : Math.max(oW, parseInt(width)) + 'px',
+								height : Math.max(oH, parseInt(height)) + 'px'
+							});
+						}
+						elem.css('background-size', width + 'px ' + height + 'px');	
+					}
+
+				}
+				alert('上传中');
+				$('#configModal').modal('hide');
+			};
+
+			fnCancel = function (){
+				$("#upload").uploadify('destroy');
+				log('Destroy');
+			};
+		} else if (operType == 'chunk'){
+			fnOK = function (){
+				$('#form1').form('submit',{
+					url : ctxUrl + '/modelController/getColumnHtml.do',
+					onSubmit : function (){
+						return $(this).form('validate');
+					},
+					success : function (data){
+						var res = $.parseJSON(data)[0];
+						var target = elem;
+						for (var n in res) {
+							if (res[n] == '') {
+								alert('不能为空');
+							} else {
+								if (n == 'more') {
+									$('[desc="more"]', target).attr('href', res['more']);
+								} else {
+									$('[desc="'+n+'"]', target).html(HTMLUnescape(res[n]));
+									if (n == 'content') {
+										$(target).attr('desc_ext', HTMLUnescape(res[n]));
+									}
+								}
+							}
+						}
+
+						$('#configModal').modal('hide');
+					}
+				});
+			};
+
+			fnCancel = function (){
+				log('Default cancel');
+			};
+		} else if (operType == 'navbar') {
+			$('#form1').form('submit',{
+					url : ctxUrl + '/modelController/getNavBarHtml.do',
+					onSubmit : function (){
+						return $(this).form('validate');
+					},
+					success : function (data){
+						var res = $.parseJSON(data)[0];
+						var target = elem;
+						for (var n in res) {
+							if (n == 'more') {
+								$(target).attr('href', res[n]);
+							} else {
+								//Title
+								$(target).html(res[n]);
+							}
+						}
+						$('#configModal').modal('hide');
+					}
+				});
 		}
 	};
 

@@ -9,7 +9,7 @@
 		<style type="text/css">
 			*{margin:0;padding:0;}
 			li{list-style: none;}
-			.header{height:auto;width:100%;min-width: 960px;min-height:140px;position: fixed;left:0;top:0;}
+			.header{height:auto;width:100%;min-width: 1160px;min-height:140px;position: fixed;left:0;top:0;}
 			.header .publish-part{height:42px;width:100%;background-color:#eee;padding-top:10px;}
 			.header .publish-area input{position:relative;float:left;margin-right:4px;width:240px;}
 			.header .publish-area button.inp-btn{float:left;margin-left:4px;}
@@ -45,7 +45,7 @@
 
 
 			/* main wrapper */
-			.wrapper{z-index:-1;background-color:#f8f8f8;left:0;margin-top: 200px;margin-bottom:200px;padding:5px;left:0;width:98%;height:auto;}
+			.wrapper{z-index:-1;background-color:#f8f8f8;left:0;margin-top: 200px;margin-bottom:200px;padding:5px;left:0;min-width:980px;width:96%;height:auto;}
 			ul#dragged-list{margin:0;padding:0;}
 			.wrapper .drag-part{min-height:120px;height:auto;width:100%;margin:5px auto;border:1px dashed #000;background-color:#FFF;}
 			.placeHolder { background-color:white !important; border:dashed 1px gray !important; }
@@ -107,9 +107,9 @@
 						<div class="widget-contents">
 							<div class="widget-content">
 								<ul id="test-list" class="widget-list">
-									<li class="widget-list-item" data-widget="Widget-A">A</li>
-									<li class="widget-list-item">B</li>
-									<li class="widget-list-item">C</li>
+									<li class="widget-list-item" data-widget="widget-A">A</li>
+									<li class="widget-list-item" data-widget="widget-B">B</li>
+									<li class="widget-list-item" data-widget="widget-C">C</li>
 									<li class="widget-list-item">D</li>
 								</ul>
 							</div>
@@ -126,16 +126,68 @@
 						</div>
 					</div>
 					<div class="tool-container background-container">
-						背景
+						<div class="row-fluid">
+							<br>
+							<div class="span3">
+								<div class="row">
+									<div class="input-group">
+									  <span class="input-group-addon" id="sizing-addon2">背景颜色：</span>
+									  <input type="text" class="form-control" placeholder="" aria-describedby="sizing-addon2">
+									</div>
+								</div>
+								<br>
+								<div class="row">
+									<div class="input-group">
+									  <span class="input-group-addon text-right" id="sizing-addon2">页面宽度：</span>
+									  <input type="text" class="form-control" placeholder="" aria-describedby="sizing-addon2">
+									</div>
+								</div>
+							</div>
+							<div class="span2">
+								<form id="bg-upload-form">
+									<input type="hidden" id="bg-url" name="bg_url" class="form-control">
+									<input type="file" id="bgUpload" name="attr" class="form-control"><br>
+									<button id='bg-upload-btn' class="btn btn-primary btn-block">上传图片</button>
+								</form>
+							</div>
+							<div class="offset1 span2">
+								<div class="btn-group">
+								  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+								    背景定位 <span class="caret"></span>
+								  </button>
+								  <ul class="dropdown-menu" role="menu">
+								    <li><a href="#">X方向</a></li>
+								    <li><a href="#">Y方向</a></li>
+								  </ul>
+								</div>
+
+								<div class="btn-group">
+								  <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+								    背景重复 <span class="caret"></span>
+								  </button>
+								  <ul class="dropdown-menu" role="menu">
+								    <li><a href="#">X-重复</a></li>
+								    <li><a href="#">Y-重复</a></li>
+								    <li><a href="#">重复</a></li>
+								    <li><a href="#">不重复</a></li>
+								  </ul>
+								</div>
+								<br><br>
+								<button id="confirm-bg-btn" class="btn btn-success btn-block">确定设置</button>
+
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 		<div class="wrapper">
 			<ul id="dragged-list">
-				<li class="drag-part" operable="flash">bread</li>
-				<li class="drag-part" data-source-code='widget'>vegetables</li>
-				<li class="drag-part" operable="text,href">meat</li>
+				<!--
+					<li class="drag-part">bread</li>
+					<li class="drag-part">vegetables</li>
+					<li class="drag-part">meat</li>
+				-->
 			</ul>
 		</div>
 		<!-- Configuration Modal -->
@@ -176,6 +228,10 @@
 			</div>
 		</div>
 	</body>
+	<script type="text/javascript">
+		function getUrl(){return "${url}";};
+		function getContextPath(){return "${ctx }";};
+	</script>
 	<script type="text/javascript" src="js/jquery-1.11.1.min.js"></script>
 	<script type="text/javascript" src="js/jquery-smartMenu.js"></script>
 	<script type="text/javascript" src="jquery.dragsort-0.5.1.js"></script>

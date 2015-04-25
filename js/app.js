@@ -4,12 +4,6 @@
  * @date    2015-04-17 17:15:40
  * @version $Id$
  */
- window.debug = true;
- function log(k,v){
-	if (window.debug && console && console.log) {
-		k && (v ? console.log(k, v) : console.log(k));
-	}
-}
 
 	// A tiny seed id generator
 	var generatorId = function (len, radix, prefix, subfix){
@@ -48,28 +42,29 @@
 			return prefix+targetId+subfix;
 		};
 	/**
-	* Global dispatcher for intializing every modules
-	*/
-	function initModules(){
-		// $.ajax({
-		// 	url : 'publish/1429493589.html',
-		// 	type : "GET",
-		// 	dataType : "html",
-		// 	success : function (data){
-		// 		$('.wrapper').html(data);
-		// 	}
-		// }).done(function (){
-		// 	initHeader();
-		// 	initMainWrapper();
-		// 	//initialize the widget dragging event
-		// 	initDragWidgets();
-		// });
-
-		initHeader();
-		initMainWrapper();
-		//initialize the widget dragging event
-		initDragWidgets();
-		
+	 * [initModules description]
+	 * @param  {[type]} entry [If not null, redicect to a existed template that has been already generated]
+	 * @return {[type]}       [description]
+	 */
+	function initModules(entry){
+		if (arguments.length >= 1) {
+			$.ajax({
+				url : entry,
+				type : "GET",
+				dataType : "html",
+				success : function (data){
+					$('.wrapper').html(data);
+				}
+			}).done(function (){
+				initHeader();
+				initMainWrapper();
+				initDragWidgets();
+			});
+		} else {
+			initHeader();
+			initMainWrapper();
+			initDragWidgets();
+		}
 	}
 
 	function initHeader(){
@@ -113,7 +108,7 @@
 		// Init Theme Elemnet
 		initTheme();
 
-		//
+		initBackground();
 		initWrapperDraggable();
 	}
 
@@ -177,6 +172,7 @@
 			});
 		});
 
+		//This will get all the generated themes that have already been published
 		$.ajax({
 			url : "scan.php",
 			cache : false,
@@ -196,6 +192,66 @@
 		});
 	}
 
+
+	function initBackground () {
+		// $('#rbg').ColorPicker({
+		// 	onSubmit : function (hsb, hex, rgb, el){
+		// 		$(el).val(hex);
+		// 		$(el).ColorPickerHide();
+		// 	},
+		// 	onBeforeShow : function (){
+		// 		$(this).ColorPickerSetColor(this.value);
+		// 	}
+		// }).bind('keyup', function (){
+		// 	$(this).ColorPickerSetColor(this.value);
+		// });
+
+		$("#bgUpload").uploadify({
+	        height        : 30,
+	        buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-default">选择图片</button></div>',
+	        swf           : './uploadify/uploadify.swf',
+	        uploader      : './uploadify/uploadify.php',
+	        width         : 120,
+	        'onUploadSuccess' : function(file, data, response) {
+	            //alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+	            var res = $.parseJSON(data);
+	            $('#conf-url').val(res.url);
+	        }
+	    });
+
+	    $('#bg-upload-btn').on('click', function (){
+	    	var img = $('#bgUpload').val();
+	    	if (img) {
+	    		var re = new RegExp("(.jpg|.png|.jpeg|.gif|.bmg)$");
+	    		if (!re.text(img.toLowerCase())) {
+	    			alert('上传的图片格式不正确');
+	    			return;
+	    		}
+	    	}
+	    	$('#bg-upload-form').form('submit', {
+	    		url : getContextPath() + "/attachmentController/uploadReturnUrl.do",
+	    		onSubmit : function (){
+	    			return $(this).form('validate');
+	    		},
+	    		success : function (result){
+	    			var res = $.parseJSON(result);
+	    			if (res.success) {
+	    				$('#bg-url').val(getUrl() + "/" + res.url);
+	    				alert('上传成功');
+	    			} else {
+	    				alert(res.error);
+	    			}
+	    		}
+	    	});
+	    });
+
+
+
+	    $('#confirm-bg-btn').on('click', function (){
+
+	    });
+	}
+
 	function initWrapperDraggable(){
 		var oWrapper = $('.wrapper');
 		var aFlash = oWrapper.find('*[operable]');
@@ -205,6 +261,10 @@
 	}
 
 	function doPublish(html){
+		// Test case
+		var str = "width=12;height=232;href=123123.123123.12;git=hub;";
+		log(parseKV2Json(str));
+		return;
 		$.ajax({
 			url : 'publish.php',
 			data : {"html":html},
@@ -264,7 +324,135 @@
 	 */
 	function generatePreviewHTML(html){
 		var $dom = $(html);
+		//======================================================================================
+		//  There are some cases should be well handled
+		//  
+		//  Case 1: Prepend base.css file into the wrapper header
+		//  Case 2: Flash plugins should do some reconstruction and resize jobs
+		//  Case 3: Include jQuery library if needed
+		//  Case 4: Append injected JS scripts at the bottom
+		//  Case 5: Wrap the img element when it has 'link' attribute in data-history config
+		//  Case 6: Replace the 'contentShow' area of 'desc_ext' area
+		//
+		//=======================================================================================
+		
+		//  Case 1: Prepend base.css file into the wrapper header
+		$('<link>',{
+			type : "text/css",
+			href : getContextPath() + "/cmskj/css/base.css"
+		}).prependTo($dom);
 
+
+		//  Case 2: Widget should do some reconstruction handles
+		var aOperables = $dom.find('*[operable]');
+		aOperables.each(function (){
+			var o = $(this).attr('operable');
+			var oArray = o.split(',');
+
+			if (oArray.length == 1) {
+				var operType = oArray[0];
+				log('operType:'+operType);
+				if (operType == 'flash') {
+					var	iW = 200,
+						iH = 80,
+						sLink = '',
+						flashId = '',
+						flashHTML = '',
+						configString = $(this).data('history-config');
+
+
+					if (configString) {
+						var config = parseKV2Json(configString);
+						for (var attr in config) {
+							if (attr == 'width') {
+								iW = config[attr];
+							} else if (attr == 'height'){
+								iH = config[attr];
+							} else if (attr == 'link') {
+								sLink = config[attr];
+								flashId = sLink.substring(0, url.lastIndesOf('.'));
+							}
+						}
+					}
+
+					flashHTML += '<object width="' + iW + '" height=' + iH + '" type="application/x-shockwave-flash" ';
+					flashHTML += 'data="/' + sLink + '" id="flash_' + flashId + '" style="visibility:visible;">';
+					flashHTML += '<param name="movie" value="/ '+ sLink +'" />';
+					flashHTML += '<param name="allowScriptAccess" value="always" />';
+					flashHTML += '<param name="wmode" value="transparent" />';
+					flashHTML += '<param name="allowFullscreen" value="true" />';
+					flashHTML += '<param name="quality" value="high" />';
+					flashHTML += '</object>';
+					
+					log($(this).html());
+					$(this).replaceWith(flashHTML);
+				} else if (operType == 'upload') {
+					// For pictures
+					var configString = $(this).data('history-config');
+					if (configString) {
+						var config = parseKV2Json(configString);
+						
+					}
+				}
+			}
+			
+		});
+
+
+		
+		var aDependencies = $dom.find('*[data-widget-dependency]');
+		aDependencies.each(function (){
+			var d = $(this).data('widget-dependency').toLowerCase();
+			//  Case 3: Include jQuery library if needed
+			if(d.indexOf('hasjq') >= 0){
+				if (!$dom.data('jquery-included')) {
+					var sPath = getContextPath() + "/cmskj/js/jquery-1.11.1.min.js";
+					var oJQ = $('<script>', {
+						type : "text/javascript",
+						src : sPath
+					});
+					$dom.prepend(oJQ);
+					$dom.data('jquery-included', true);
+				}
+			}
+			//  Case 4: Append injected JS scripts at the bottom
+			if (d.indexOf('jsinjected') >= 0) {
+				if (!$dom.data('jsinjected')) {
+					$.ajax({
+						dataType : "text",
+						url : getContextPath() + "/cmskj/js/injectedJS.txt"
+					}).done(function (res){
+						var oInj = $('<script>', {
+							type : "text/javascript",
+							src : sPath
+						});
+						$dom.append(oInj);
+						$dom.data('jsinjected', true);
+					});
+				}
+			}
+		});
+		// After case 3,4 , clean the cache flags
+		$dom.removeData('jquery-included');
+		$dom.removeData('jsinjected');
+
+
+		var contentSource = $dom.find('*[desc_ext]'),
+			contentSourceArray = [],
+			contentShowArray = [];
+
+		contentSource.each(function (){
+			var content = $(this).attr('desc_ext');
+			var ctShow = $(this).find('*[desc=contentShow]');
+			contentShowArray.push(ctShow.html());
+			contentSourceArray.push(content);
+			$(this).removeAttr('desc_ext');
+		});
+
+
+
+
+		// Construct a brand new template
 		var aTemplates = $dom.find('.layout-template');
 		aTemplates.each(function (){
 			$(this).removeAttr('style').removeAttr('class').removeAttr('data-type');
@@ -272,12 +460,23 @@
 
 		var aOperables = $dom.find('*[operable]');
 		aOperables.each(function (){
+
 			$(this).removeAttr('operable');
 		});
-		
-		
+
+		// Need to do the clean job after tackle all the corner cases
+		var aDels = $dom.find('*[del]');
+		aDels.each(function (){
+
+		});
+
+		var htmlSouce = '';
+		var htmlShow = '';
+
+
 		var aLi = $dom.find('li.drag-part');
-		//Step1. replace useless tags
+		
+
 		var fragment = '';
 		aLi.each(function (){
 			var html = $(this).html();
@@ -420,8 +619,8 @@
 			});
 			m.data('data-resize', true);
 		}
-		
 	}
+
 	function maxMask(){
 		var $doc = $(document);
 		var $body = $(document.body);
@@ -449,6 +648,7 @@
 		}
 		return oMask;
 	}
+
 	function unmask(){
 		var $doc = $(document);
 		var $win = $(window);
@@ -468,6 +668,7 @@
 			}
 		},50);
 	}
+
 	//=================================================================
 	//
 	// Mask Controll End
@@ -490,7 +691,7 @@
 				targetClass : '.layout-template',
 				fnDragEnd : function (oTargetWidget){
 					//request html and append;
-					var html = $(this).html();
+					//var html = $(this).html();
 
 				}
 			});
@@ -507,6 +708,39 @@
 		initWrapperDraggable();
 	}
 
+
+
+	//=================================================================================
+	//
+	//	There are some util functions
+	//
+	//==================================================================================
+
+	
+	function toCamelCase(str){
+		return str.replace(/\-(\w)/g, function(all, letter){
+　　　　　return letter.toUpperCase();
+　　　　});
+	}
+
+	function camel2HB(str){
+		return str.replace(/([A-Z])/g,"-$1").toLowerCase();
+	}
+
+
+	window.debug = true;
+	
+	function log(k,v){
+		if (window.debug && console && console.log) {
+			k && (v ? console.log(k, v) : console.log(k));
+		}
+	}
+
+	 function dir(o){
+		if (window.debug && console && console.dir) {
+			console.dir(o);
+		}
+	}
 
 
 	/**
