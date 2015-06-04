@@ -63,12 +63,20 @@
  			(function (){
  				var targetElements = wrapper.find(targetClass);
 		 		$.each(targetElements, function (i){
+		 			var _self = this;
+		 			var pOL = 0,
+		 				pOT = 0;
+		 			while (_self.offsetParent) {
+		 				_self = _self.offsetParent;
+		 				pOL += _self.offsetLeft;
+		 				pOT += _self.offsetTop;
+		 			}
 					var elemDesc = {
 						elemIndex : 1 + i,
-						left : this.offsetLeft,
-						top : this.offsetTop,
-						right : this.offsetLeft + $(this).outerWidth(),
-						bottom : this.offsetTop + $(this).outerHeight()
+						left : pOL + this.offsetLeft,
+						top : pOT + this.offsetTop,
+						right : pOL + this.offsetLeft + $(this).outerWidth(),
+						bottom : pOT + this.offsetTop + $(this).outerHeight()
 					};
 					posArray.push(elemDesc);
 				});
@@ -128,6 +136,7 @@
  					$(document).off('mouseup');
  					$(o).fadeOut('slow').removeAttr('data-mousemove');
  					var k = Drag._checkMouseOver(ev);
+
  					if (k > -1) {
  						var targetElem = wrapper.find(targetClass).eq(k);
  						if ($(that).attr("data-widget")) {
@@ -139,6 +148,7 @@
 	 							async : false,
 	 							dataType : "text",
 	 							success : function (html){
+	 								alert('html');
 	 								var $dom = $(html);
 	 								var widgetId = generatorId(null, null ,'Widget','Generated');
 	 								$dom.attr('id', widgetId).attr('data-widget-id', widgetId);
@@ -161,11 +171,10 @@
 	 								// 2.Check links
 	 								// 3.Check scripts
 
-
 	 								$dom.smartMenu(menuData);
 	 								targetElem.append($dom);
 	 								$dom.johnDraggable();
-	 								$dom.highlight();
+	 								//$dom.highlight();
 	 							}
 	 						}).done(function (){
 	 							if (opts.fnDragEnd && $.isFunction(opts.fnDragEnd)){
@@ -173,7 +182,21 @@
 			 					}
 	 						});
  						} else {
+
  							$clone = $(that).clone(true);
+ 							// if (targetElem){
+ 							// 	var aElem = $(targetElem).find('*[operable]');
+	 						// 	if (aElem.length) {
+	 						// 		var p = -1;
+	 						// 		var offsetArray = [];
+	 						// 		for (int j=0,l=aElem.length; j<l; j++){
+	 						// 			var o = aElem.eq(j).offset();
+	 						// 			offsetArray.push(o);
+	 						// 		}
+	 						// 		log(offsetArray);
+	 						// 	}
+ 							// }
+ 							
  							$clone.appendTo(targetElem);
  							$(that).remove();
  							//Destroy last event;
@@ -184,19 +207,23 @@
  						}
  						
  						
- 					}
+ 					} 
  					return false;
  				},
  				_checkMouseOver : function (ev){
 					var r = {
 						x : ev.pageX, y : ev.pageY
 					};
+					log('RRRRRRRRR');
+					log(r);
+
 	 				var posArray = buildPosArray();
+	 				log(posArray);
 	 				var p = -1;
-	 				for (var i=0,len=posArray.length; i<len; i++) {
-	 					var elem = posArray[i];
+	 				for (var x=0,len=posArray.length; x<len; x++) {
+	 					var elem = posArray[x];
 	 					if (r.x > elem.left && r.x < elem.right && r.y > elem.top && r.y < elem.bottom) {
-	 						p = i;break;
+	 						p = x;break;
 	 					}
 	 				}
 	 				return p;
@@ -214,7 +241,7 @@
  		context : 'body',
  		placeholder : '.placeholder',
  		targetWrapperClass : '.wrapper',
-		targetClass : '.layout-template'
+		targetClass : '.layout-zone'
  	};
 
 
