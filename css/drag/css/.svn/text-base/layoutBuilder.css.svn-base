@@ -1,0 +1,22 @@
+@charset "utf-8";
+.layout-template{margin-bottom: 10px;}
+.layout-template-container {position: relative;min-height:100px;height:auto;display:block;}
+.layout-decoration{
+	background:pink;
+	border:1px dotted #000;
+	box-sizing:border-box;
+	-moz-box-sizing:border-box; /* Firefox */
+	-webkit-box-sizing:border-box; /* Safari */
+}
+.layout-zone {
+	float:left;
+	min-height:120px;
+	height:auto;
+}
+
+.lz1 {width : 100%;martin:0 auto;}
+.lz2 {width : 20%;}
+.lz3 {width : 25%;}
+.lz4 {width : 75%;}
+.lz5 {width : 50%;}
+.lz6 {width : 33%;}

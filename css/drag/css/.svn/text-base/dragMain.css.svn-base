@@ -1,0 +1,64 @@
+@charset utf-8;
+*{margin:0;padding:0;}
+li{list-style: none;}
+.header{height:auto;width:100%;min-width: 960px;min-height:140px;position: fixed;left:0;top:0;}
+.header .publish-part{height:42px;width:100%;background-color:#eee;padding-top:10px;}
+.header .publish-part .container{min-width:1160px;}
+.header .publish-area input{position:relative;float:left;margin-right:4px;width:240px;}
+.header .publish-area button.inp-btn{float:left;margin-left:4px;}
+.header .tool-part{height:auto;width:100%;color:#fff;background-color:#444851;}
+.header ul.tool-menu{width:auto;height:45px;line-height: 45px;margin-bottom:0;!important;}
+ul.tool-menu li.tool-menu-item{height:45px;line-height:45px;cursor:pointer;float:left;margin-right:2px;min-width:80px;text-align: center;}
+ul.tool-menu li.tool-menu-item:hover{background-color:#09f;color:#fff;}
+.header .selected{background-color:#09f;color:#fff;}
+.header .tool-container{display:none;max-height:240px;height:190px;min-width:90%;overflow:auto;background-color:#DDF;color:#000;box-shadow: 0 0 10px #000;}
+
+/* Layout CSS */
+.widget-contents ul.widget-list,
+.layout-container ul.layout-list,
+.theme-container ul.theme-list {width:90%;margin-top:18px;}
+
+.widget-contents ul.widget-list li.widget-list-item,
+.layout-container ul.layout-list li.layout-list-item{cursor:pointer;padding-top:40px;text-align:center;float:left;width:104px;height:50px;margin-left: 10px;}
+/* Layout CSS end*/
+/* Widget CSS */
+.widget-container ul.widget-items-tab {width:90%;display: block;}
+.widget-container ul.widget-items-tab li.widget-item-radio{cursor:pointer;min-width:80px;height:45px;line-height:45px;width:auto;float: left;margin-left:20px;}
+.widget-container ul.widget-items-tab li.widget-item-radio input{margin:4px;}
+.widget-container ul.widget-items-tab li.widget-item-radio small{display:inline-block;font-size:14px;}
+.widget-container .widget-contents{display: block;float: left;min-height:160px;width:100%;}
+/* Widget item CSS */
+.widget-contents ul.widget-list li.widget-list-item{height:80px;border:1px dashed #000;padding-top:0px;margin-bottom:20px;width:100px;}
+/* Widget CSS end*/
+
+
+/* Theme item CSS */
+.theme-contents ul.theme-list li.theme-list-item{height:80px;border:1px dashed #000;width:180px;float:left;margin-left: 10px;}
+/* Theme CSS end*/
+
+
+/* main wrapper */
+.wrapper{z-index:-1;min-height:140px;background-color:#D8D8D8;left:0;margin-top: 200px;margin-bottom:200px;padding:5px;left:0;min-width:980px;width:100%;height:auto;}
+.wrapper a{text-decoration:none;}
+ul#dragged-list{margin:0;padding:0;}
+.wrapper .drag-part{min-height:120px;height:auto;width:100%;margin:5px auto;border:1px dashed #000;background-color:#FFF;}
+.placeHolder { background-color:white !important; border:dashed 1px gray !important; }
+
+.clearfix{ 
+	*zoom:1;
+	&:before,
+	&:after{
+		display:table;
+		content:"";
+	}
+	&:after {
+		clear : both;
+	}
+} 
+input.inp-mg{width:20px;margin-left:2px;margin-right:10px;display: inline;}
+
+/* Souce Code Editor */
+.source-code-panel{display:none;position:absolute;width:760px;height:400px;overflow:auto;background:#999;padding:10px;border-radius: 4px;box-shadow: 0 0 20px #fff;}
+
+/* drag header for modal */
+.dragModal-ui-header{width:100%;height:32px;background:#F5F5F5;border-radius:10px;padding:5px;cursor:move;}

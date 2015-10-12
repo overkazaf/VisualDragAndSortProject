@@ -1,0 +1,53 @@
+(function ($){
+    var preLoad = function (){
+        $('.widget-powerpoint').each(function (){
+            var imgParent = $(this).find('.hidden-images');
+            var aImages = imgParent.children('img');
+            var oUl = $(this).find('.slide-list');
+            var oPager = $(this).find('.pagenation');
+            
+            oUl.empty();
+            oPager.empty();
+            aImages.each(function (index){
+                var oLi = $('<li>').attr({
+                    'class' : 'slide-list-item'
+                }).append($(this));
+                oLi.appendTo(oUl);
+                
+                
+                var pagerLi = $('<li>').attr({
+                    'class' : 'page-btn'
+                }).text(index+1).appendTo(oPager);
+                if (0 == index) {
+                    pagerLi.addClass('active');
+                }
+            });
+        });
+    };
+    
+    var init = function (){
+        $('.widget-powerpoint').each(function (){
+            $(this).johnSlidable({
+                slider : '.powerpoint-slider',
+                movedItemClass : '.slide-list',
+                previousButton : 'a.sld-prev',
+                nextButton     : 'a.sld-next',
+                hasSmallButton : 1,
+                sPagerClass    : '.pagenation',
+                sButtonClass   : '.page-btn',
+                itemsPerPage   : 1,
+                autoPlay       : 1,
+                loop           : 1,
+                switchSpeed    : 800,
+                interval       : 4000
+            });
+        });
+    };
+    
+    var $cb = $.Callbacks();
+    
+    $cb.add(preLoad);
+    $cb.add(init);
+    
+    $cb.fire();
+})(jQuery);

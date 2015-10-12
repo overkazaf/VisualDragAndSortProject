@@ -1,0 +1,22 @@
+@charset utf-8;
+.tag-indicator {
+	cursor: pointer; overflow:hidden;outline:1px dotted #f00;
+}
+.widget-selected {
+	background:#ff0;
+	cursor:pointer;
+	outline:2px dashed #000;
+	position:relative;
+}
+
+.widget-item {
+	width:115px;height:80px;margin-right:8px;padding-top:10px;padding-bottom:5px;cursor:pointer;
+}
+
+.widget-item-img {
+	position: relative;
+	height:80px;padding-bottom:5px;overflow:hidden;cursor:pointer;
+}
+.widget-item-img img {
+	max-height:80px;
+}

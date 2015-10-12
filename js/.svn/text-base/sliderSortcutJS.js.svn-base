@@ -1,0 +1,58 @@
+(function ($){
+    var titleArray = [];
+    var preLoad = function (){
+        $('.ppt-shortcut').each(function (idx){
+            titleArray[idx] = [];
+            var imgParent = $(this).find('.hidden-images');
+            var aImages = imgParent.children('img');
+            var aTitles = imgParent.children('div.imgclass');
+            var oUl = $(this).find('.slide-list');
+            var oPager = $(this).find('.pagenation');
+            
+            
+            oUl.empty();
+            oPager.empty();
+            aTitles.each(function (index){
+                var oA = $(this).children('a');
+                var oLi = $('<li>').attr({
+                    'class' : 'slide-list-item'
+                }).append($(oA));
+                $(this).remove();
+                oLi.appendTo(oUl);
+                var pagerLi = $('<li>').attr({
+                    'class' : 'page-btn'
+                }).text(index+1).appendTo(oPager);
+                if (0 == index) {
+                    pagerLi.addClass('active');
+                }
+            });
+            
+            var aLi = oUl.find('.slide-list-item');
+            aImages.each(function (index){
+                var targetA = aLi.eq(index).children('a');
+                var title = targetA.html();
+                titleArray[idx].push(title);
+                targetA.html($(this));
+            });
+        });
+    };
+    
+    var init = function (){
+        $('.ppt-shortcut').each(function (idx){
+            var id = $(this).attr('id');
+            $(id).slidable({
+                context : '.widget-powerpoint',
+                hasTitle       : 1,
+                titleClass     : '.powerpoint-title',
+                titleArray     : titleArray[idx]
+            });
+        });
+    };
+    
+    var $cb = $.Callbacks();
+    
+    $cb.add(preLoad);
+    $cb.add(init);
+    
+    $cb.fire();
+})(jQuery);

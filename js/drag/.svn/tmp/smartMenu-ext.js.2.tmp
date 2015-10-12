@@ -1,0 +1,1642 @@
+/**
+ * 
+ * @authors John Nong (overkazaf@gmail.com)
+ * @date    2015-04-17 11:52:45
+ * @version $Id$
+ */
+//smartMenu-ext.js
+//		Define some utils to combine with smartMenu plugin,
+//		This part will implement some operation logic for operable elements to make changes 
+
+	function HTMLUnescape(str){
+	    return String(str)
+	    .replace(/&lt;/g, '<')
+	    .replace(/&gt;/g, '>');
+	}
+    /**
+	 * [parseKV2Json description]
+	 * @param  {[type]} str [A ';' and '=' separated string that need to be parsed ] 
+	 * @return {[type]}     [An json object that formats well in key-value form]
+	 */
+	function parseKV2Json(str){
+		var obj = {};
+		if (str.indexOf(';') >= 0 ) {
+			var array = str.split(';'),
+				i,
+				len = array.length;
+
+			for (i=0;i<len;i++) {
+				if (array[i].indexOf('=') >= 0) {
+					var p = array[i].split('=');
+					if (p.length == 2) {
+						// Valid format
+						obj[p[0]] = p[1];
+					} else {
+						continue;
+					}
+				}
+			}
+		}
+		return obj;
+	}
+
+	/**
+     * [changeSite description]
+     * @return {[type]}     [While the top dropdown has been changed, change the mapping dropdown below]
+     */
+	 function changeSite() {
+	     var data = {'siteId':$.trim($("#site").val())};
+         $.ajax({
+             url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+             cache : false,
+             async : true,
+             type : 'POST',
+             data : data,
+             success : function (d){
+                 var data = $.parseJSON(d);
+                 var selectColumn = document.getElementById("siteColumn");
+                 selectColumn.options.length = 0;
+                 for ( var i = 0, len = data.length; i < len; i++) {
+                     var di = data[i];
+                     selectColumn.add(new Option(di.columnName, di.columnId));
+                 }
+             }
+         });
+     }
+	 
+	 
+var widgetDict = {
+   'vote' : '简单投票',
+   'panel-link' : '链接面板',
+   'flash' : 'FLASH',
+   'powerpoint' : '幻灯片',
+   'upload' : '图片',
+   'navbar' : '站点绑定',
+   'panel' : '新闻面板',
+   'footer' : '站点底部',
+   'image-chunk' : 'image-chunk',
+   'navbar-list' : '导航栏',
+   'chunk' : '块部件',
+   'undefined' : '未知'
+};
+/* 
+* Smart Menu configurations 
+* This is a global var in this js file
+*
+*/
+var menuData = [
+   [{
+	   	text : '编辑',
+	   	func : function (){
+	   		var type = $(this).attr('operable');
+	   		var elemId = $(this).data('widget-id');
+	   		var _self = $(this);
+	   		
+	   		//过滤未支持的容器类
+	   		if (type) {
+	   			if (type != 'layout') {
+	   			    $('.widgetHighLight').removeClass('widgetHighLight');
+	   			    $(this).addClass('widgetHighLight');
+	   			    var html = constructConfigPanelTemplate(type,elemId, _self);
+	                displayConfigPanel(html);
+	   			} else {
+    	   			 if ($(this).attr('data-type') == 'drag-layout') {
+        	   			  var id = $(this).attr('data-layout-id');
+        	   			  $('.layout-cell').removeClass('highlight');
+        	   			  $(this).children('.layout-row').children('.layout-cell').addClass('highlight');
+                          var params = $(this).attr('data-history-config');
+                          var html = constructLayoutConfigPanelTemplate(id, params);
+                          displayLayoutConfigPanel(html);
+    	   			 }
+	   			}
+	   		} else{
+	   			alert('不存在布局或部件');
+	   		}
+	   	}
+   }],
+   [{
+	   	text : '添加',
+	   	func : function (){
+	   		var type = $(this).attr('operable');
+	   		var elemId = $(this).data('widget-id');
+	   		if (type) {
+	   		    $('.widgetHighLight').removeClass('widgetHighLight');
+                $(this).addClass('widgetHighLight');
+	   			if (type == 'link-panel') {
+	   				var html = constructConfigPanelTemplate(type, elemId, null, 'append');
+	   				displayConfigPanel(html);
+	   			} else {
+	   				alert('这一部件暂时不支持添加功能');
+	   			}
+	   			
+	   		} else {
+	   			
+	   		}
+	   	}
+   }],
+   [{
+	   	text : '删除',
+	   	func : function (){
+	   		var type  = $(this).attr('operable');
+	   		if (type) {
+	   		    if (type == 'layout') {
+	   		        //alert('此元素不支持删除操作');
+    	   		     $('.layout-cell').removeClass('highlight');
+                     $(this).children('.layout-row').children('.layout-cell').addClass('highlight');
+                    if (confirm("确认要删除这个布局?")) {
+                        $(this).closest('.layout-container').remove();
+                    }
+	   		    } else {
+	   		        $('.widgetHighLight').removeClass('widgetHighLight');
+	   		        $(this).addClass('widgetHighLight');
+	   		        var operArray = type.split(',');
+	                if (operArray.length == 1 && operArray[0] == 'link-item') {
+	                    $(this).remove();
+	                } else if(operArray.length == 2 && operArray[0] == 'text' && operArray[1] == 'href'){
+	                     if (confirm("确认要删除这个" + widgetDict[type] +"部件?")) {
+	                         $(this).closest('.link-list-item').remove();
+	                     }
+	                } else {
+	                     //alert('此元素不支持删除操作');
+	                     if (confirm("确认要删除这个" + widgetDict[type] +"部件?")) {
+	                         $(this).remove();
+	                     }
+	                }
+	   		    }
+	   		} else{
+	   		  alert('不存在布局或部件,请先添加');
+	   		}
+	   	}
+   }],
+   [{
+	   	text : '编辑源代码',
+	   	func : function (){
+	   		var source = $(this).attr('data-source-code');
+   			if (source == 'widget' || source == 'layout') {
+   				// alert($(this).html());
+   				//mask();
+   			} else {
+   				//alert('This component dosent allow to edit source-code');
+   				//mask();
+   			    var self = $(this);
+   				initSourceCodePanel($(this).prop('outerHTML'), function (html){
+   				    $(self).replaceWith($(html));
+   				});
+   			}
+	   	}
+   }],
+];
+
+/*
+*	This function is used to generate a layout configurable template
+*/
+function constructLayoutConfigPanelTemplate(layoutid, params){
+	var html          = '', 
+		footer        = '',
+		setupUpload   = null,
+		fnOK          = null,
+		fnCancel      = null;
+	
+	if (params) {
+		params = params.split('$');
+		var oTemplate = $('#'+layoutid);
+		var aLayout = oTemplate.children('.layout-row').children(".layout-cell");
+		var scaleParam = params[0].split(",");
+		var marginParamGroup = params[1].split("^");
+		
+		if (scaleParam.length > 0 && scaleParam.length == aLayout.length) {
+			var reUnit = /(\D+)/g;
+			var unit = scaleParam[0].match(reUnit);
+			html += '<div class="row">';
+			html += '<div class="span4">';
+			html += '<div class="row-fluid">';
+            html += '<div class="offset3 span4 text-right">选择单位:</div>';
+            html += '<div class="offset1 span2">px <input type="radio" value="px" name="unit" '+(unit=='px'?'checked="checked"':'')+'></div>';
+            html += '<div class="span2">% <input type="radio" name="unit" value="%" '+(unit=='%'?'checked="checked"':'')+'></div>';
+            html += '</div>';
+			for (var i=0,len=scaleParam.length; i<len; i++) {
+				var val = parseInt(scaleParam[i]);
+				var marginParam = marginParamGroup[i].split(",");
+				html += '<div class="row-fluid">';
+				html += '<div class="offset3 span4 text-right">列'+(i+1)+'(<span class="unit">'+unit+'</span>):</div>';
+				html += '<div class="span4"><input type="text" name="scale" class="form-control" value="'+val+'"></div>';
+				html += '</div>';
+				if (marginParam.length == 4) {
+					html += '<div class="inp-mg-group">';
+					html += '<div class="row-fluid">';
+					html += '<div class="offset3 span6">边距设置(px):</div>';
+					html += '</div>';
+					html += '<div class="offset1 span5">';
+					html += '上：<input type="text" name="inp-mg" class="inp-mg" value="' + marginParam[0] + '">';
+					html += '下：<input type="text" name="inp-mg" class="inp-mg" value="' + marginParam[1] + '">';
+					html += '左：<input type="text" name="inp-mg" class="inp-mg" value="' + marginParam[2] + '">';
+					html += '右：<input type="text" name="inp-mg" class="inp-mg" value="' + marginParam[3] + '">';
+					html += '</div>';
+					html += '</div>';
+				} else if (marginParam.length == 2) {
+					html += '<div class="inp-mg-group">';
+					html += '<div class="row-fluid">';
+					html += '<div class="offset3 span6">边距设置(px):</div>';
+					html += '</div>';
+					html += '<div class="offset1 span5">';
+					html += '上：<input type="text" name="inp-mg" class="inp-mg" value="0">';
+					html += '下：<input type="text" name="inp-mg" class="inp-mg" value="0">';
+					html += '左：<input type="text" name="inp-mg" class="inp-mg" value="0">';
+					html += '右：<input type="text" name="inp-mg" class="inp-mg" value="0">';
+					html += '</div>';
+					html += '</div>';
+				}
+				var flag = aLayout.eq(i).attr('data-layout-param');
+				if (flag) {
+				    if (flag.indexOf('bc') >= 0) {
+	                    html += '<div class="row-fluid">';
+	                    html += '<div class="offset3 span4 text-right">背景色:</div>';
+	                    html += '<div class="span4"><input type="text" name="inp-bc" class="inp-bc" value="">';
+	                    html += '</div>';
+	                    html += '</div>';
+	                }
+	                
+	                if (flag.indexOf('bgi') >= 0) {
+	                    html += '<div class="row-fluid">';
+	                    html += '<div class="offset6 span3">背景图：<input type="file" id="upload_'+i+'" name="attr" class="form-control"></div>';
+	                    html += '<div><input type="hidden" name="inp-bgi" class="form-control"></div>';
+	                    html += '</div>';
+	                }
+	                
+	                html += '<div class="offset1 span4"><hr></div>';
+				}
+			}
+			
+			html += '</div>';
+            html += '</div>';
+            
+            
+			footer = '<button class="btn btn-primary">确定</button><button class="btn btn-default" data-dismiss="modal">取消</button>';
+			fnOK = function (){
+				var oTemplate = $('#'+layoutid);
+				var aLayout = oTemplate.children('.layout-row').children(".layout-cell");
+				var oModal = $('#configModal');
+				var $body = oModal.find('.modal-body');
+				var scaleInputs = $body.find('input[name=scale]');
+				var marginInputs = $body.find('input[name=inp-mg]');
+				var bcInputs = $body.find('input[name=inp-bc]');
+				var bgiInputs = $body.find('input[name=inp-bgi]');
+				var inputUnit = $body.find('input[name=unit]');
+				var unit = inputUnit.filter(':checked').val();
+				//precheck
+				var flag = false;
+				if (unit == '%' || unit == 'px') {
+					var sum = 0;
+					$.each(scaleInputs, function (i){
+						if (!this.value){
+							this.value = 0;
+						} else if (isNaN(this.value)) {
+							alert('参数非法，请检查');
+							flag = true;
+							return;
+						} else if (this.value < 0){
+							alert('参数非法，请检查');
+							flag = true;
+							return;
+						}
+						sum += parseInt(this.value);
+						if (sum > 100){
+						    if (unit == '%') {
+						        flag = true;
+	                            return;
+						    } else if (unit == 'px' && sum > 1920) {
+						        flag = true;
+	                            return;
+						    }
+							
+						}
+					});
+
+					   
+					$.each(marginInputs, function (i){
+						if (!this.value){
+							this.value = 0;
+						} else if (isNaN(this.value)) {
+							alert('参数非法，请检查');
+							flag = true;
+							return;
+						} else if (this.value < 0){
+							alert('参数非法，请检查');
+							flag = true;
+							return;
+						}
+					});
+
+					if (flag) {
+						alert("参数非法，请检查");
+						return;
+					} else {
+						var targetScaleParam = '',
+							targetMaginParam = '';
+						scaleInputs.each(function (index){
+							var targetScaleValue = $(this).val() + unit;
+							if (targetScaleParam != '')targetScaleParam += ',';
+							targetScaleParam += targetScaleValue;
+
+							var targetMarginValue = '';
+							for (var j=0;j<4;j++) {
+								var val = marginInputs.eq(index*4 + j).val();
+								if(j)val = ',' + val;
+								targetMarginValue += val;
+							}
+							if(targetMaginParam != '')targetMaginParam += '^';
+							targetMaginParam += targetMarginValue;
+
+							var targetLayout = aLayout.eq(index);
+							var originStyle = targetLayout.attr('style');
+							var targetStyle = "";
+							var styleArray = originStyle && originStyle.split(";");
+							var mh = 120;
+							var test = {};
+							if (styleArray) {
+							    for (var i=0,len=styleArray.length; i<len; i++){
+	                                var p = styleArray[i].split(":");
+	                                if (p.length == 2) {
+	                                    var attr = p[0], val = p[1];
+	                                    if (attr in test) {
+	                                    	// do nothing
+	                                    } else {
+	                                    	if (attr == 'min-height') {
+	                                    		if (targetLayout.hasClass('lzh1')) {
+	            							    	var minH = 240;
+	            							    	if (!targetLayout.data('origin-minheight')) {
+	            							    		targetLayout.data('origin-minheight', '240px');
+	            							    	}
+	            							    	var tarH = 120;
+	            							    	if (targetScaleValue.indexOf('%') >= 0) {
+	            							    		tarH = minH * parseInt(targetScaleValue)/100;
+	            							    	} else {
+	            							    		tarH = parseInt(targetScaleValue);
+	            							    	}
+	            							    	targetStyle += "min-height:" + tarH + "px;";
+	            							    	
+	            							    }
+		                                    } else if(attr == 'width'){
+		                                    	targetStyle += "width:" + targetScaleValue + ";";
+		                                    } else {
+		                                    	//targetStyle += attr + ":" + val + ";";
+		                                        //targetStyle += attr + ":" + targetScaleValue + ";";
+		                                    }
+		                                    test[attr] = val;
+	                                    }
+	                                    
+	                                }
+	                            }
+							} else {
+							    // Conner case
+							    if (targetLayout.hasClass('lzh1')) {
+							    	var minH = 240;
+							    	if (!targetLayout.data('origin-minheight')) {
+							    		targetLayout.data('origin-minheight', '240px');
+							    	}
+							    	var tarH = 120;
+							    	if (targetScaleValue.indexOf('%') >= 0) {
+							    		tarH = minH * parseInt(targetScaleValue)/100;
+							    	} else {
+							    		tarH = parseInt(targetScaleValue);
+							    	}
+							    	targetStyle += "min-height:" + tarH + "px;";
+							    	
+							    } else {
+							    	targetStyle += "width:" + targetScaleValue + ";";
+							    }
+							}
+							targetStyle += 'margin-top:' + marginInputs.eq(index*4 + 0).val() + 'px;';
+							targetStyle += 'margin-bottom:' + marginInputs.eq(index*4 + 1).val() + 'px;';
+							targetStyle += 'margin-left:' + marginInputs.eq(index*4 + 2).val() +'px;';
+							targetStyle += 'margin-right:' + marginInputs.eq(index*4 + 3).val() +'px';
+							targetStyle += '!important;';
+							targetLayout.attr('style' ,targetStyle);
+							var bcVal = bcInputs.eq(index).val();
+							if (bcVal && bcVal != null) {
+							    targetLayout.css({
+	                                'background-color' : '#' + bcVal
+	                            });
+							}
+							
+							
+							var bgiVal = bgiInputs.eq(index).val();
+							if (bgiVal && bgiVal != null) {
+							    targetLayout.css({
+                                    'background-image' : 'url(/'+bgiVal+')'
+                                });
+                            }
+							
+							log(targetLayout.attr('style'));
+						});
+						
+						oTemplate.attr('data-history-config', targetScaleParam + "$" + targetMaginParam);
+						
+						// setting background color;
+						$('#configModal').modal('hide');
+					}
+				}
+				
+			};
+			setupUpload = function () {
+			  var oModal = $('#configModal');
+			  var $modalBody = oModal.find('.modal-body');
+			  var $inputUnit = $modalBody.find('input[name=unit]');
+			  var $inputScale = $modalBody.find('input[name=scale]');
+			  var $inputBGColor = $modalBody.find('input[name=inp-bc]');
+			  var $inputBGImage = $modalBody.find('input[name=attr]');
+			  var $inputBGImageUrl = $modalBody.find('input[name=inp-bgi]');
+			  
+			  // Automatically calculate the scale in layout
+			  $inputUnit.each(function (index){
+			      $(this).click(function (){
+			          var val = $(this).val();
+			          $inputUnit.eq(1-index).removeAttr('checked');
+			          $('.unit').text(val);
+			          
+			          var sum4Layout = 0;
+			          $inputScale.each(function (){
+			              sum4Layout += parseInt($(this).val());
+			          });
+			          
+			          if (sum4Layout > 0) {
+			              if (val == '%') {
+	                          $inputScale.each(function (){
+	                              var pxVal = $(this).val();
+	                              var target = Math.round((pxVal / sum4Layout) * 100);
+	                              $(this).val(target);
+	                          });
+	                      } else if (val == 'px'){
+	                          $inputScale.each(function (index){
+	                              var v = aLayout.eq(index).width();
+	                              $(this).val(v);
+	                          });
+	                      }
+			          }
+			          
+			      });
+			  });
+			  
+			  $inputBGColor.each(function (){
+			      $(this).ColorPicker({
+			            onSubmit : function(hsb, hex, rgb, el) {
+			                $(el).val(hex);
+			                $(el).ColorPickerHide();
+			            },
+			            onBeforeShow : function() {
+			                $(this).ColorPickerSetColor(this.value);
+			            }
+			        }).on('keyup', function() {
+			            $(this).ColorPickerSetColor(this.value);
+			        });
+			  });
+			  
+			  var $cb = $.Callbacks();
+			  $inputBGImage.each(function (index){
+			      var fn = function(){
+			          var id = '#upload_'+index;
+			          
+			          if ($(id).length) {
+			              try{
+			                  $(id).uploadify('destroy');
+			              }catch(e){
+			                  log(e);
+			              }finally{
+			                  $(id).uploadify({
+		                          height        : 30,
+		                          buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-primary">上传背景图片</button></div>',
+		                          swf           : ctxUrl+'/cmskj/js/uploadify/uploadify.swf',
+		                          uploader      : ctxUrl+'/attachmentController/uploadReturnUrl.do',
+		                          width         : 200,
+		                          'onUploadSuccess' : function(file, data, response) {
+		                              var res = $.parseJSON(data);
+		                              $inputBGImageUrl.eq(index).val(res.url);
+		                          },
+		                          'onDestroy' : function (){
+		                              alert('destroying');
+		                          }
+		                      });
+			                  if ($.browser.msie) { $(".swfupload").attr("classid","clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"); }
+			              }
+			          }
+			      };
+			      $cb.add(fn);
+			  });
+			  
+			  $cb.fire();
+			},
+			fnCancel = function (){
+			    var oModal = $('#configModal');
+                oModal.modal('hide');
+			};
+		}
+
+	}
+
+	return {
+		body : html,
+		footer : footer,
+		onRenderReady : setupUpload ,
+		buttonFn : {
+			fnOK : fnOK,
+			fnCancel : fnCancel
+		}
+	};
+}
+
+
+/**
+ * [constructConfigPanelTemplate description]
+ * @param  {[type]} type   [Operable type that indicates a specific widget]
+ * @param  {[type]} ext    [Extra params that need to be configured]
+ * @param  {[type]} elemId [Source Element that need to be configured, 
+ *                          will pass the parameters to the panel and then pass it back when legally finished]
+ * @param  {[type]} self    [If not specify an element id, pass the self reference inside]
+ * @param  {[type]} todo    [Indicates which command to do]
+ * @return {[type]}        [description]
+ */
+function constructConfigPanelTemplate(type, elemId, self, todo){
+	var html = '<div class="row">';
+		//html += '<div class="span3">';
+	var elem;
+	if (self) {
+	    elem = self;
+	} else {
+	    elem = $('#'+elemId);
+	}
+	var ext = elem.attr('data-widget-param');
+	var operable = type.split(",");
+
+	if (operable.length == 2) {
+	    elem = self;
+	    for(var i =0;i<operable.length;i++){
+            if(operable[i] == "panel"){
+                continue;
+            }
+            html += '<div class="row-fluid">';
+            html += '<div class="offset1 span2 text-right">'+operable[i]+'：</div>';
+            if(operable[i] == "text"){
+                html += '<div class="span2"><input type="text" class="form-control" value="'+$(elem).html()+'"></div>';
+            }else{
+                html += '<div class="span2"><input type="text" class="form-control" value="'+$(elem).attr(operable[i])+'"></div>';
+            }
+            html += '</div>';
+        }
+		
+	} else if (operable.length == 1) {
+		var operType = operable[0];
+		if (operType == 'flash') {
+			html += '<div class="row-fluid">';
+			html += '<div class="offset3 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
+			html += '<div><input type="hidden" id="conf-url" name="url" class="form-control"></div>';
+			html += '</div><br>';
+		} else if (operType == 'navbar-list') {
+		    // do nothing, but maybe construct a bc/bgi configurable panel
+		} else if (operType == 'footer') {
+		 // do nothing, but maybe construct a bc/bgi configurable panel
+		} else if (operType == 'upload') {
+			// Pictures
+			html += '<div class="row-fluid">';
+			html += '<div class="offset3 span3"><input type="file" id="upload" name="attr" class="form-control"></div>';
+			html += '<div><input type="hidden" id="conf-url" name="url" class="form-control"></div>';
+			html += '</div><br>';
+		} else if (operType == 'link-panel') {
+		    // Not allow to edit the contents
+		    if (todo && todo == 'append') {
+		        html += '<div class="row">';
+	            html += '<div class="row-fluid">';
+	            html += '<div class="offset2 span2 text-right op_item" op_item="text">链接文字:</div>';
+	            html += '<div class="span1"><input type="text" class="form-control"></div>';
+	            html += '</div>';
+	            html += '</div>';
+
+	            html += '<div class="row">';
+	            html += '<div class="row-fluid">';
+	            html += '<div class="offset2 span2 text-right op_item" op_item="href">链接地址:</div>';
+	            html += '<div class="span1"><input type="text" class="form-control"></div>';
+	            html += '</div>';
+	            html += '</div>';
+		    }
+		} else if (operType == 'powerpoint') {
+		    $.ajax({
+                url : ctxUrl + '/siteController/getSite.do?t='+Math.random(),
+                cache : false,
+                async : false,
+                type : "POST",
+                data : {'siteId' : $.trim($('#site').val())},
+                success : function (result){
+                    var res = $.parseJSON(result);
+                    html += '<form id="form1">';
+                    html += '<div class="row-fluid">';
+                    html += '<div class="offset2 span2 text-right">站点:</div>';
+                    html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+                    for (var i = 0, len = res.length; i < len; i++) {
+                        html += '<option value="' + res[i]['siteId'] + '">' + res[i]['siteName'] + '</option>';
+                    }
+                    html += '</select>';
+                    html += '</div></div>';
+
+                    html += '<div class="row-fluid">';
+                    html += '<div class="offset2 span2 text-right">栏目:</div>';
+                    $.ajax({
+                        url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+                        cache : false,
+                        async : false,
+                        type : 'POST',
+                        data : {'siteId': res[0]['siteId']},
+                        success : function (d){
+                            var data = $.parseJSON(d);
+                            html += '<div class="span3"><select id="siteColumn" name="siteColumn">';
+                            for (var i = 0, len = data.length; i < len; i++) {
+                                html += '<option value="' + data[i]['columnId'] + '">' + data[i]['columnName'] + '</option>';
+                            }
+                            html += '</select>';
+                            html += '</div></div>';
+
+                            html += '<div class="row-fluid">';
+                            html += '<div class="offset2 span2 text-right">条数:</div>';
+                            html += '<div class="span3"><input type="text" name="count" class="form-control"></div>';
+                            html += '</div>';
+
+                            html += '<div class="row-fluid">';
+                            html += '<div class="offset2 span2 text-right">长度:</div>';
+                            html += '<div class="span3"><input type="text" name="length" class="form-control"></div>';
+                            html += '</div>';
+
+                            html += '</form>';
+                            html += '</div>';
+                        }
+                    });
+                }
+            });
+		} else if (operType == 'imgchuck') {
+		    $.ajax({
+                url : ctxUrl + '/siteController/getSite.do?t='+Math.random(),
+                cache : false,
+                async : false,
+                type : "POST",
+                data : {'siteId' : $.trim($('#site').val())},
+                success : function (result){
+                    var res = $.parseJSON(result);
+                    html += '<form id="form1">';
+                    html += '<div class="row-fluid">';
+                    html += '<div class="offset2 span2 text-right">站点:</div>';
+                    html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+                    for (var i = 0, len = res.length; i < len; i++) {
+                        html += '<option value="' + res[i]['siteId'] + '">' + res[i]['siteName'] + '</option>';
+                    }
+                    html += '</select>';
+                    html += '</div></div>';
+
+                    html += '<div class="row-fluid">';
+                    html += '<div class="offset2 span2 text-right">栏目:</div>';
+                    $.ajax({
+                        url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+                        cache : false,
+                        async : false,
+                        type : 'POST',
+                        data : {'siteId': res[0]['siteId']},
+                        success : function (d){
+                            var data = $.parseJSON(d);
+                            html += '<div class="span3"><select id="siteColumn" name="siteColumn">';
+                            for (var i = 0, len = data.length; i < len; i++) {
+                                html += '<option value="' + data[i]['columnId'] + '">' + data[i]['columnName'] + '</option>';
+                            }
+                            html += '</select>';
+                            html += '</div></div>';
+
+                            html += '<div class="row-fluid">';
+                            html += '<div class="offset2 span2 text-right">条数:</div>';
+                            html += '<div class="span3"><input type="text" name="count" class="form-control"></div>';
+                            html += '</div>';
+
+                            html += '<div class="row-fluid">';
+                            html += '<div class="offset2 span2 text-right">长度:</div>';
+                            html += '<div class="span3"><input type="text" name="length" class="form-control"></div>';
+                            html += '</div>';
+
+                            html += '</form>';
+                            html += '</div>';
+                        }
+                    });
+                }
+            });
+		} else if (operType == 'navbar') {
+			$.ajax({
+				url : ctxUrl + '/siteController/getSite.do?t='+Math.random(),
+				cache : false,
+				async : false,
+				type : "POST",
+				data : {'siteId' : $.trim($('#site').val())},
+				success : function (result){
+					var res = $.parseJSON(result);
+					html += '<form id="form1">';
+					html += '<div class="row-fluid">';
+					html += '<div class="offset2 span2 text-right">站点:</div>';
+					html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+					for (var i = 0, len = res.length; i < len; i++) {
+						html += '<option value="' + res[i]['siteId'] + '">' + res[i]['siteName'] + '</option>';
+					}
+					html += '</select>';
+					html += '</div></div>';
+
+					html += '<div class="row-fluid">';
+					html += '<div class="offset2 span2 text-right">栏目:</div>';
+					$.ajax({
+						url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+						cache : false,
+						async : false,
+						type : 'POST',
+						data : {'siteId': res[0]['siteId']},
+						success : function (d){
+							var data = $.parseJSON(d);
+							html += '<div class="span3"><select id="siteColumn" name="siteColumn">';
+							for (var i = 0, len = data.length; i < len; i++) {
+								html += '<option value="' + data[i]['columnId'] + '">' + data[i]['columnName'] + '</option>';
+							}
+							html += '</select>';
+							html += '</div></div><br>';
+
+							html += '</form>';
+							html += '</div>';
+						}
+					});
+				}
+			});
+		} else if (operType == 'panel') {
+			$.ajax({
+				url : ctxUrl + '/siteController/getSite.do?t='+Math.random(),
+				cache : false,
+				async : false,
+				type : "POST",
+				data : {'siteId' : $.trim($('#site').val())},
+				success : function (result){
+					var res = $.parseJSON(result);
+					html += '<form id="form1">';
+					html += '<div class="row-fluid">';
+					html += '<div class="offset2 span2 text-right">站点:</div>';
+					html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+					for (var i = 0, len = res.length; i < len; i++) {
+						html += '<option value="' + res[i]['siteId'] + '">' + res[i]['siteName'] + '</option>';
+					}
+					html += '</select>';
+					html += '</div></div>';
+
+					html += '<div class="row-fluid">';
+					html += '<div class="offset2 span2 text-right">栏目:</div>';
+					$.ajax({
+						url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+						cache : false,
+						async : false,
+						type : 'POST',
+						data : {'siteId': res[0]['siteId']},
+						success : function (d){
+							var data = $.parseJSON(d);
+							html += '<div class="span3"><select id="siteColumn" name="siteColumn">';
+							for (var i = 0, len = data.length; i < len; i++) {
+								html += '<option value="' + data[i]['columnId'] + '">' + data[i]['columnName'] + '</option>';
+							}
+							html += '</select>';
+							html += '</div></div>';
+
+							html += '<div class="row-fluid">';
+							html += '<div class="offset2 span2 text-right">条数:</div>';
+							html += '<div class="span3"><input type="text" name="count" class="form-control"></div>';
+							html += '</div>';
+
+							html += '<div class="row-fluid">';
+							html += '<div class="offset2 span2 text-right">长度:</div>';
+							html += '<div class="span3"><input type="text" name="length" class="form-control"></div>';
+							html += '</div>';
+
+							html += '<div class="row-fluid">';
+							html += '<div class="offset2 span2 text-right">时间:</div>';
+							html += '<div class="span3"><select name="date">';
+							html += '<option value=""></option>';
+							html += '<option value="yyyy-MM-dd">2014-01-01</option>';
+							html += '<option value="MM-dd" selected>01-01</option>';
+							html += '<option value="yyyy年MM月dd日">2014年01月01日</option>';
+							html += '<option value="yyyyMMdd">20140101</option>';
+							html += '</select></div>';
+							html += '</div><br>';
+							html += '</form>';
+							html += '</div>';
+						}
+					});
+				}
+			});
+		} else if (operType == 'text') {
+		    html += '<div class="row-fluid">';
+            html += '<div class="offset2 span2 text-right">text：</div>';
+            html += '<div class="span1"><input type="text" class="form-control" value="'+$(elem).html()+'"></div>';
+            html += '</div>';
+		} else if (operType == 'vote') {
+		    //投票部件
+		    $.ajax({
+                url : '../suffrageController/getSuffrageList.do',
+                type : "POST",
+                cache : false,
+                async : false,
+                dataType : "text",
+                success : function (data){
+                    var d = $.parseJSON(data);
+                        html += '<div id="vote" class="row-fluid">';
+                        html += '<div class="offset2 span2 text-right">主题:</div>';
+                        html += '<div class="span4">';
+                        html += '<select id="voteSelect" class="form-control">';
+                    for (var i=0,l=d.length; i<l; i++) {
+                        var opt = d[i];
+                        html += '<option value="'+opt['id']+'">' + opt['subject'] + '</option>';
+                    }
+                    html += '</select>';
+                    html += '</div>';
+                    html += '</div>';
+                }
+            });
+		} else {
+			// default template
+			html += '<div class="row-fluid">';
+			html += '<div class="offset2 span2 text-right">配置参数:</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
+			html += '</div>';
+
+			html += '<div class="row-fluid">';
+			html += '<div class="offset2 span2 text-right">配置参数:</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
+			html += '</div>';
+
+			html += '<div class="row-fluid">';
+			html += '<div class="offset2 span2 text-right">配置参数:</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
+			html += '</div>';
+
+			html += '<div class="row-fluid">';
+			html += '<div class="offset2 span2 text-right">配置参数:</div>';
+			html += '<div class="span1"><input type="text" class="form-control"></div>';
+			html += '</div>';
+		}
+
+
+
+		// Some basic params is allowed to be reset
+		if (ext && !todo) {
+			// w --> width, h --> height, bc --> background-color, bgi --> background-image
+			var params = ext.split(';');
+
+			//history configurations
+			var historyConfig = elem.attr('data-history-config');
+			var configJson = parseKV2Json(historyConfig);
+			for (var i=0,len=params.length; i<len; i++) {
+				var param = params[i];
+				if (param) {
+					// row started
+				    html += '<div class="row">';
+					html += '<div class="row-fluid">';
+					if ('link' === param) {
+						html += '<div class="offset2 span2 text-right">链接:</div>';
+						html += '<div class="span3"><input type="text" id="conf-link" class="form-control" value="'+configJson['link']+'"></div>';
+					} else if ('width' === param) {
+						html += '<div class="offset2 span2 text-right">宽度:</div>';
+						html += '<div class="span3"><input type="text" id="conf-width" class="form-control" value="'+configJson['width']+'"></div>';
+					} else if ('height' === param) {
+						html += '<div class="offset2 span2 text-right">高度:</div>';
+						html += '<div class="span3"><input type="text" id="conf-height" class="form-control" value="'+configJson['height']+'"></div>';
+					} else if ('bc' === param) {
+						html += '<div class="offset2 span2 text-right">背景色:</div>';
+						html += '<div class="span3"><input type="text" id="conf-bc" class="form-control" value="'+configJson['bc']+'"></div>';
+					} else if ('bgi' === param) {
+					    html += '<div class="row-fluid">';
+                        html += '<div class="offset4 span3"><input type="file" id="upload" name="attr" class="form-control" value="'+configJson['bgi']+'"></div>';
+                        html += '<div><input type="hidden" id="conf-bgi" name="inp-bgi" class="form-control"></div>';
+                        html += '</div>';
+					} else if ('nb' === param) {
+					    $.ajax({
+			                url : ctxUrl + '/siteController/getSite.do?t='+Math.random(),
+			                cache : false,
+			                async : false,
+			                type : "POST",
+			                data : {'siteId' : $.trim($('#site').val())},
+			                success : function (result){
+			                    var res = $.parseJSON(result);
+			                    html += '<form id="form1">';
+			                    html += '<div class="row-fluid">';
+			                    html += '<div class="offset2 span2 text-right">站点:</div>';
+			                    html += '<div class="span3"><select id="site" name="site" onchange="changeSite()">';
+			                    for (var i = 0, len = res.length; i < len; i++) {
+			                        html += '<option value="' + res[i]['siteId'] + '">' + res[i]['siteName'] + '</option>';
+			                    }
+			                    html += '</select>';
+			                    html += '</div></div>';
+
+			                    html += '<div class="row-fluid">';
+			                    html += '<div class="offset2 span2 text-right">栏目:</div>';
+			                    $.ajax({
+			                        url : ctxUrl + '/siteColumnController/getSiteColumn.do',
+			                        cache : false,
+			                        async : false,
+			                        type : 'POST',
+			                        data : {'siteId': res[0]['siteId']},
+			                        success : function (d){
+			                            var data = $.parseJSON(d);
+			                            html += '<div class="span3"><select id="siteColumn" name="siteColumn">';
+			                            for (var i = 0, len = data.length; i < len; i++) {
+			                                html += '<option value="' + data[i]['columnId'] + '">' + data[i]['columnName'] + '</option>';
+			                            }
+			                            html += '</select>';
+			                            html += '</div></div>';
+
+			                            html += '</form>';
+			                            html += '</div>';
+			                        }
+			                    });
+			                }
+			            });
+					} else {
+						// Unknown parameter
+//						html += '<div class="offset1 span2 text-right">配置参数:</div>';
+//						html += '<div class="span3"><input type="text" class="form-control"></div>';
+					}
+
+					// row ended
+					html += '</div>';
+					html += '</div>';
+				} else {
+					// The last senmicolon, need to do nothing 
+				}
+			}
+		}
+	}
+
+
+	html += '</div>';//end for row class
+
+
+	//confirg footer, especially for the button events
+	var footer = '<button class="btn btn-primary">确定</button><button class="btn btn-default" data-dismiss="modal">取消</button>';
+	var setupUpload = null;
+	var fnOK = null, fnCancel = null, fnUpload = null;
+	
+	function modalCleanUp(){
+	    try {
+	        $("#upload").uploadify('destroy');
+	    }catch(e){};
+	    
+        var oModal = $('#configModal');
+        var $modalBody = oModal.find('.modal-body');
+        oModal.modal('hide');
+        $modalBody.empty();
+	}
+	
+	function extraFn (fnType) {
+	    var history = '',
+            link = '',
+            width = '',
+            height = '',
+            bgcolor = '',
+            bgimage = '';
+        var flag = !1;
+    
+        if ($('#conf-link').length) 
+            link = $.trim($('#conf-link').val());
+        
+        if ($('#conf-width').length) 
+            width = $.trim($('#conf-width').val());
+    
+        if ($('#conf-height').length) 
+            height = $.trim($('#conf-height').val());
+    
+        if ($('#conf-bc').length) 
+            bgcolor = $.trim($('#conf-bc').val());
+    
+        if ($('#conf-bgi').length) 
+            bgimage = $.trim($('#conf-bgi').val());
+    
+    
+        //validate parameters
+        (function (a,b,c,d){
+            var are = /([\w-]+\.)+[\w-]+([\w-.?\%\&\=]*)?/gi;
+            var bre = /\d+/gi;
+            var cre = /\d+/gi;
+            var dre = /\#[0-9a-fA-F]{6}/gi;
+            var ere = /\.(bmp|jpg|gif|jpeg)$/gi;
+            var errorMessage = '参数非法，请检查';
+            if(a && !are.test(a)){
+//                /alert(errorMessage);
+                flag = true;
+            }
+    
+            
+        })(link, width, height, bgimage);
+    
+    
+        if (flag){
+            return false;
+        }
+    
+        if(link)
+            history += 'link='+link+";";
+    
+        if(width)
+            history += 'width='+width+";";
+        
+        if(height)
+            history += 'height='+height+";";
+        
+        if(bgcolor)
+            history += 'bc='+bgcolor+";";
+        
+        if(bgimage)
+            history += 'bgi='+bgimage+";";
+        
+        elem.attr('data-history-config', history);
+    
+        if (width && height) {
+            var oW = elem.width();
+            var oH = elem.height();
+            if (width.indexOf('%') == -1 && height.indexOf('%') == -1) {
+                if (oW < parseInt(width) || oH < parseInt(height)) {
+                    alert('提示：设置的图片大小超出原部件，将改变原部件尺寸');
+                    if (oW < parseInt(width) && oH < parseInt(height)) {
+                        elem.attr({
+                            "style" : 'width:'+ parseInt(width) + 'px;height:' + parseInt(height) +'px;!improtant;'
+                        });
+                    } else if (oW < parseInt(width)) {
+                        elem.attr({
+                            "style" : 'width:'+ parseInt(width) + 'px;height:'+ oH +'px;!improtant;'
+                        });
+                    } else {
+                        elem.attr({
+                            "style" : 'width:'+ oW + 'px;height:'+ parseInt(height) +'px;!improtant;'
+                        });
+                    }
+                } else {
+                    elem.attr({
+                        "style" : 'width:'+ parseInt(width) + 'px;height:'+ parseInt(height) +'px;!improtant;'
+                    });
+                }
+                elem.css('background-size', width + 'px ' + height + 'px');   
+            } else {
+                // for the percentage
+                var tarW = parseInt(width),
+                    tarH = parseInt(height);
+                if (width.indexOf('%') >= 0) {
+                    tarW += '%';
+                } else {
+                    tarW += 'px';
+                }
+                
+                if (height.indexOf('%') >= 0) {
+                    tarH += '%';
+                } else {
+                    tarH += 'px';
+                }
+                
+                if (fnType && fnType.indexOf('panel') >= 0){
+                    elem.find('[class$=body]').attr({
+                        "style" : 'width:'+ tarW + ';height:'+ tarH + ';!improtant;'
+                    });
+                }
+                elem.attr({
+                    "style" : 'width:'+ tarW + ';height:'+ tarH + ';!improtant;'
+                });
+                elem.css('background-size', elem.width() + 'px ' + elem.height() + 'px');  
+            }
+        }
+        //Change image bi and size
+        var imgUrl = $('#conf-url').val();
+        if (imgUrl){
+            if (fnType == 'upload') {
+                var bg = 'background-image:url(/'+ imgUrl + ');';
+                var originStyle = elem.attr('style');
+                elem.attr({
+                    style : originStyle + ";" + bg
+                });
+            } else if (fnType == 'flash') {
+                var config = elem.data('history-config');
+                if (config) {
+                    elem.attr("data-history-config",config + ";" + "link="+imgUrl);
+                } else {
+                    elem.attr("data-history-config", "link="+imgUrl);
+                }
+            }
+        } else {
+            var bgUrl = $('#conf-bgi').val();
+            var bg = 'background-image:url(/'+ bgUrl + ');';
+            var originStyle = elem.attr('style');
+            elem.attr({
+                style : originStyle + ";" + bg
+            });
+        }
+        
+        
+        if (bgcolor){
+            if(bgcolor.indexOf('#') < 0){
+                bgcolor = '#' + bgcolor;
+            }
+            
+            if (fnType && fnType.indexOf('panel') >= 0){
+                elem.find('[class$=body]').css('background-color', bgcolor); 
+            } else {
+                elem.css('background-color', bgcolor); 
+            }
+        }
+        
+	}
+	
+	
+	if (operable.length == 2) {
+ 		fnOK = function (){
+ 		    var oModal  = $('#configModal');
+ 		    var $modalBody = oModal.find('.modal-body');
+ 		    var aInputs = $modalBody.find('input[type=text]');
+ 		    var title = aInputs.eq(0).val();
+ 		    elem.html(title);
+ 		    elem.attr('title', title);
+ 		    elem.attr('href', aInputs.eq(1).val());
+ 		    oModal.modal('hide');
+ 		};
+	} else if (operable.length == 1) {
+		var operType = operable[0];
+		if (operType == 'flash') {
+			setupUpload = function (){
+				$("#upload").uploadify({
+			        height        : 30,
+			        buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-default">选择Flash</button></div>',
+			        swf           : ctxUrl+'/cmskj/js/uploadify/uploadify.swf',
+			        uploader      : ctxUrl+'/attachmentController/uploadReturnUrl.do',
+			        width         : 120,
+			        'onUploadSuccess' : function(file, data, response) {
+			            //alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+			            var res = $.parseJSON(data);
+			            $('#conf-url').val(res.url);
+			        }
+			    });
+				if ($.browser.msie) { $(".swfupload").attr("classid","clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"); }
+			},
+			fnUpload = function (){
+				$("#upload").uploadify("upload", '*');
+			},
+			fnOK = function (e){
+				try {
+				    $("#upload").uploadify('destroy');
+				}catch(e){};
+				
+				if (ext) {
+				    extraFn('flash');
+				}
+				$('#configModal').modal('hide');
+			};
+
+			fnCancel = function (){
+			    modalCleanUp();
+			};
+		} else if (operType == 'upload') {
+			setupUpload = function (){
+			    if ($("#upload").length) {
+			        try{
+			            $("#upload").uploadify('destroy');
+			        }catch(e){};
+			    }
+			    
+				$("#upload").uploadify({
+			        height        : 30,
+			        width         : 120,
+			        buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-default">选择图片</button></div>',
+			        swf           : ctxUrl+'/cmskj/js/uploadify/uploadify.swf',
+			        uploader      : ctxUrl+'/attachmentController/uploadReturnUrl.do',
+			        'onUploadSuccess' : function(file, data, response) {
+			            //alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+			            var res = $.parseJSON(data);
+			            $('#conf-url').val(res.url);
+			        }
+			    });
+				if ($.browser.msie) { $(".swfupload").attr("classid","clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"); }
+			},
+			fnOK = function (e){
+			    try {
+		            $("#upload").uploadify('destroy');
+		        }catch(e){};
+		        
+				if (ext) {
+				    extraFn('upload');
+				}
+				$('#configModal').modal('hide');
+			};
+
+			fnCancel = function (){
+			    modalCleanUp();
+			};
+		} else if (operType == 'panel'){
+			fnOK = function (){
+				$('#form1').form('submit',{
+					url : ctxUrl + '/modelController/getColumnHtml.do',
+					onSubmit : function (){
+						return $(this).form('validate');
+					},
+					success : function (data){
+						var res = $.parseJSON(unescape(data))[0];
+						var target = elem;
+						for (var n in res) {
+							if (res[n] == '') {
+								alert('不能为空');
+							} else {
+								if (n == 'more') {
+								    $('[desc="more"]', target).attr('href', res['more']);
+								} else {
+									$('[desc="'+n+'"]', target).html(HTMLUnescape(res[n]));
+									if (n == 'content') {
+										target.attr('desc_ext', HTMLUnescape(res[n]));
+									}
+								}
+							}
+						}
+
+						extraFn('panel');
+						$('#configModal').modal('hide');
+					}
+				});
+			};
+
+			fnCancel = function (){
+				log('Default cancel');
+			};
+		} else if (operType == 'link-panel') {
+		    fnOK = function () {
+		        var target = elem;
+		        var oModal = $("#configModal");
+		        var $modalBody = oModal.find('.modal-body');
+		        var $rows = $modalBody.find(".row-fluid");
+		        var oA = $("<a operable='text,href'></a>");
+		        $rows.each(function(){
+                    var attr = $(this).find(".op_item").attr("op_item"),
+                        val = $(this).find("input[type='text']").val();
+                    if(attr == "text"){
+                        oA.text(val || 'error');
+                        oA.attr('title', val || 'error');
+                    }else{
+                        oA.attr(attr,val || 'error');
+                    }
+                });
+                var oSpan = $("<span class='link-item' operable='link-item'></span>");
+                var oLi = $('<li class="link-list-item"></li>');
+                oSpan.append(oA).appendTo(oLi);
+                target.find('ul.link-list').append(oLi);
+                oA.on('click', function (ev){
+                    ev.preventDefault();
+                });
+                oA.smartMenu(menuData);
+                
+                extraFn(operType);
+                $('#configModal').modal('hide');
+		    };
+		} else if (operType == 'navbar-list' || operType == 'footer') {
+		    fnOK = function (){
+                try {
+                    $("#upload").uploadify('destroy');
+                }catch(e){};
+                
+                if (ext) {
+                    extraFn('upload');
+                }
+                $('#configModal').modal('hide');
+            };
+
+            fnCancel = function (){
+                modalCleanUp();
+            };
+		} else if (operType == 'navbar') {
+			fnOK = function (){
+			    $('#form1').form('submit',{
+                    url : ctxUrl + '/modelController/getColumnHtml.do',
+                    onSubmit : function (){
+                        return $(this).form('validate');
+                    },
+                    success : function (data){
+                        var res = $.parseJSON(data)[0];
+                        var target = elem || self;
+                        for (var n in res) {
+                            if (res[n] == '') {
+                                alert('不能为空');
+                            } else {
+                                if (n == 'more') {
+                                    $(target).attr('href', res['more']);
+                                } else if(n == 'title'){
+                                    $(target).html(unescape(res[n]));
+                                }
+                            }
+                        }
+                        $("[desc=content]",target).attr('style',"");
+                        modalCleanUp();
+                    }
+                });
+			    
+			};
+		} else if (operType == 'powerpoint') {
+		    fnOK = function (){
+		        extraFn();
+		        $('#form1').form('submit',{
+                    url : ctxUrl + '/modelController/getColumnHtml.do',
+                    onSubmit : function (){
+                        return $(this).form('validate');
+                    },
+                    success : function (data){
+                        var res = $.parseJSON(data)[0];
+                        var target = elem || self;
+                        for (var n in res) {
+                            if (res[n] == '') {
+                                alert('不能为空');
+                            } else {
+                                if (n == 'more') {
+                                    $('[desc="more"]', target).attr('href', res['more']);
+                                } else {
+                                    $('[desc="'+n+'"]', target).html(HTMLUnescape(res[n]));
+                                    if (n == 'content') {
+                                        target.attr('desc_ext', HTMLUnescape(res[n]));
+                                    }
+                                }
+                            }
+                        }
+                        $("[desc=content]",target).attr('style',"");
+                        modalCleanUp();
+                    }
+                });
+		    };
+		} else if (operType == 'imgchunk') {
+		    fnOK = function (){
+		        extraFn();
+		        $('#form1').form('submit',{
+                    url : ctxUrl + '/modelController/getColumnHtml.do',
+                    onSubmit : function (){
+                        return $(this).form('validate');
+                    },
+                    success : function (data){
+                        var res = $.parseJSON(data)[0];
+                        var target = elem || self;
+                        for (var n in res) {
+                            if (res[n] == '') {
+                                alert('不能为空');
+                            } else {
+                                log(n+"::"+res[n]);
+                                if (n == 'more') {
+                                    $(target).attr('href', res['more']);
+                                } else if(n == 'title'){
+                                    $(target).html(unescape(res[n]));
+                                }
+                            }
+                        }
+                        $("[desc=content]",target).attr('style',"");
+                        $('#configModal').modal('hide');
+                    }
+                });
+		    };
+		    
+		} else if (operType == 'text') {
+		    fnOK = function (){
+		        var oModal  = $('#configModal');
+	            var $modalBody = oModal.find('.modal-body');
+	            var aInputs = $modalBody.find('input[type=text]');
+	            var title = aInputs.eq(0).val();
+	            elem.html(title);
+	            oModal.modal('hide');
+		    };
+		} else if (operType == 'vote') {
+		    setupUpload = function (){
+		        //binding onchange event
+		    };
+		    
+		    fnOK = function (){
+		        var id = $('#voteSelect').val();
+		        $.ajax({
+		            url : '../suffrageController/getOptionList.do',
+		            type : "POST",
+		            data : {"id": id},
+		            cache : false,
+		            async : false,
+		            dataType : 'JSON',
+		            success : function (data){
+		                //Write in cache
+		                var template = buildVoteTemplate(data);
+		                elem.find('.vote-body').html(template);
+		                extraFn();
+		                modalCleanUp();
+		            }
+		        });
+		    };
+		}
+	};
+
+	return {
+		body : html,
+		footer : footer,
+		onRenderReady : function (){
+		    if (setupUpload && $.isFunction(setupUpload)){
+		        setupUpload();
+		    }
+		    
+		    if ($('#conf-bc').length) {
+		        $('#conf-bc').ColorPicker({
+		            onSubmit : function(hsb, hex, rgb, el) {
+		                $(el).val(hex);
+		                $(el).ColorPickerHide();
+		            },
+		            onBeforeShow : function() {
+		                $(this).ColorPickerSetColor(this.value);
+		            }
+		        }).on('keyup', function() {
+		            $(this).ColorPickerSetColor(this.value);
+		        });
+		    }
+		    
+		    
+		    if ($('#conf-bgi').length) {
+		        if ($("#upload").length) {
+                    try{
+                        $("#upload").uploadify('destroy');
+                    }catch(e){};
+                }
+                
+                $("#upload").uploadify({
+                    height        : 30,
+                    width         : 120,
+                    buttonText    :'<div class="row-fluid"><button class="btn btn-block btn-default">选择背景图片</button></div>',
+                    swf           : ctxUrl+'/cmskj/js/uploadify/uploadify.swf',
+                    uploader      : ctxUrl+'/attachmentController/uploadReturnUrl.do',
+                    'onUploadSuccess' : function(file, data, response) {
+                        //alert('The file ' + file.name + ' was successfully uploaded with a response of ' + response + ':' + data);
+                        var res = $.parseJSON(data);
+                        $('#conf-bgi').val(res.url);
+                    }
+                });
+            }
+		},
+		buttonFn : {
+			fnUpload : fnUpload,
+			fnOK : fnOK,
+			fnCancel : fnCancel
+		}
+	};
+}
+
+/**
+ * [initSourceCodeEditor description]
+ * @return {[type]}
+ */
+function initSourceCodeEditor (html) {
+    var oPanel =  $('#sourceCodePanel');
+    var w = ($(window).width() - oPanel.width())/2;
+    var h = ($(window).height() - oPanel.height())/2;
+    $('#sourceCodeWrapper').html(html);
+    
+    w = w>10 ? w : 10;
+    h = h>10 ? h : 10;
+    oPanel.css({
+        display : "block",
+        left : w,
+        top : h
+    }).appendTo($('.mask')).show();
+    $(window).scrollTop(0);
+    
+}
+
+/**
+ * [initSourceCodePanel description]
+ * @return {[type]}
+ */
+function initSourceCodePanel(htmlCode, callback){
+    var oModal = $('#configModal');
+    var fragment = "<div class='container'>";
+    fragment += '<pre class="pre-scrollable" contentEditable></pre>';
+    fragment += '</div>';
+    oModal.find('.modal-body').html($(fragment).find('pre').text(htmlCode));
+    oModal.modal('show');
+    
+    oModal.find('.modal-footer').find('.btn-primary').on('click', function (){
+        oModal.modal('hide');
+        if (callback && $.isFunction(callback)) {
+            callback(oModal.find('pre').html());
+        }
+    });
+}
+
+/**
+ * [buildVoteTemplate This function will return a well format vote for later use]
+ * @return {[String]}
+ */
+function buildVoteTemplate (questions) {
+    var l = 0,
+        fragment = '<form id="" action="" type="POST">';
+    if (l = questions.length) {
+        for (var i=l-1; i>=0; i-- ){
+            var currentQ = questions[i];
+            fragment += '<div class="row">';
+            fragment += '<div class="span6">';
+            
+            // Question contents
+            var optType = parseInt(currentQ['QUESTION_TYPE']),//问卷类型
+                id      = currentQ['ID'],//问卷ID
+                opts    = currentQ['interactiveOption'],//问卷选项
+                //seq     = currentQ['SEQUENCE'],//序列号
+                ques    = currentQ['QUESTION'],//问题
+                intID   = currentQ['INTERACTIVE_ID'],//interative_id   选项id
+                ol      = 0;
+            if (optType == 1) {
+                //Single option
+                if (ol = opts.length) {
+                    //title
+                    fragment += '<div class="row">';
+                    fragment += '<div class="span6">';
+                    fragment += '<input type="hidden" name="'+id+'" value="'+intID+'">'+ques;
+                    fragment += '</div>';
+                    fragment += '</div>';
+                    
+                    //option
+                    fragment += '<div class="row">';
+                    fragment += '<div class="span6">';
+                    fragment += '<select name="'+id+'" class="form-control">';
+                    for (;--ol >= 0;){
+                        var opt = opts[ol];
+                        fragment += '<option value="'+opt["id"]+'">';
+                        fragment += opt["optionValue"];
+                        fragment += '</option>';
+                    }
+                    fragment += '</select>';
+                    fragment += '</div>';
+                    fragment += '</div>';
+
+                }
+            } else if (optType == 2) {
+              //Multiple option
+                if (ol = opts.length) {
+                    
+                    //title
+                    fragment += '<div class="row">';
+                    fragment += '<div class="span6">';
+                    fragment += '<input type="hidden" name="'+id+'" value="'+intID+'">'+ques;
+                    fragment += '</div>';
+                    
+                    //options
+                    fragment += '<div class="span6">';
+                    fragment += '<select name="'+id+'" class="form-control" multiple>';
+                    for (;--ol >= 0;){
+                        var opt = opts[ol];
+                        fragment += '<option value="'+opt["id"]+'">';
+                        fragment += opt["optionValue"];
+                        fragment += '</option>';
+                    }
+                    fragment += '</select>';
+                    fragment += '</div>';
+                    fragment += '</div>';
+                    
+                }
+            } else if (optType == 3) {
+                // Mix type
+                if (ol = opts.length) {
+                    //title
+                    fragment += '<div class="row">';
+                    fragment += '<div class="span6">';
+                    fragment += '<input type="hidden" name="'+id+'" value="'+intID+'">'+ques;
+                    fragment += '</div>';
+                    
+                    //options
+                    fragment += '<div class="span6">';
+                    fragment += '<select name="'+id+'" class="form-control" multiple>';
+                    for (;--ol >= 0;){
+                        var opt = opts[ol];
+                        fragment += '<option value="'+opt["id"]+'">';
+                        fragment += opt["optionValue"];
+                        fragment += '</option>';
+                    }
+                    fragment += '</select>';
+                    fragment += '</div>';
+                    fragment += '</div>';
+                }
+            } else if (optType == 4) {
+                
+              fragment += '<div class="row">';
+              //title
+              fragment += '<div class="span6">简述题:</div>';
+                
+              fragment += '<div class="span6">';
+              fragment += '<textarea name="'+id+'"></textarea>';
+              fragment += '</div>';
+              
+              fragment += '</div>';
+              
+            } else {
+                // Undefined
+            }
+            
+            fragment += '</div>';
+            fragment += '</div>';
+        }
+    } else {
+        alert('无问卷数据');
+    }
+    
+    fragment += '<div class="row">';
+    fragment += '<button type="submit" class="btn btn-primary">确定</button>';
+    fragment += '</div>';
+    
+    fragment += '</form>';
+    return fragment;
+}

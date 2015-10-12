@@ -1,0 +1,116 @@
+input, selectd
+{
+    margin: 0;
+}
+td
+{
+    font-size: 14px;
+}
+body{
+    margin:0px auto;
+}
+.CodeMirror-wrapping{
+    border:1px solid #aaa;
+}
+
+#fullbg{
+    background-color: Gray;
+    display:none;
+    z-index:3;
+    position:absolute;
+    left:0px;
+    top:0px;
+    filter:Alpha(Opacity=30);
+    /* IE */
+    -moz-opacity:0.4;
+    /* Moz + FF */
+    opacity: 0.4;
+}
+
+#dialog {
+    position:absolute;
+    width:200px;
+    height:200px;
+    display: none;
+    z-index: 5;
+}
+
+.orderfields {
+    float: left;
+    width: 170px;
+}
+.orderfields ul {
+    background: white;
+    border: 1px solid #CCC;
+    border-image: initial;
+    /* position: absolute;*/
+    width: 170px;
+    padding: 0px;
+    margin: 0px;
+    list-style-type:none;
+}
+.orderfields ul li {
+    list-style-type:none;
+    text-align: center;
+}
+.orderfields a {
+
+}
+.orderfields a:hover {
+    background-color: #8EBD40;
+    color: white;
+}
+
+.fields-title {
+
+}
+
+.table-desc { }
+
+.search-span {
+
+}
+.search-span input
+{
+
+    border: 1px solid #999;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+    -moz-box-shadow: inset 1px 1px 2px rgba(0,0,0,.2);
+    -webkit-box-shadow: inset 1px 1px 2px rgba(0, 0, 0, .2);
+    box-shadow: inset 1px 1px 2px rgba(0, 0, 0, .2);
+    background-color: white;
+    color: #666;
+    outline: none;
+    padding: 10px;
+}
+.search-span input:hover {
+    -moz-box-shadow: inset 1px 1px 4px rgba(0,0,0,.4);
+    -webkit-box-shadow: inset 1px 1px 4px rgba(0, 0, 0, .4);
+    box-shadow: inset 1px 1px 4px rgba(0, 0, 0, .4);
+}
+#orderpager{ margin-top: 10px;}
+.pager-item{display:block;float:left;}
+.pager-spinner-prev,.pager-spinner-next {
+    cursor:pointer;width: 21px;height:21px;
+    background-image: url(../img/arrow.png);
+    background-repeat: no-repeat;
+    margin-left: 15px;
+}
+.pager-spinner-prev
+{
+    background-position: 0 -21px;
+}
+.pager-spinner-prev:hover {
+    background-position: 0 1px;
+}
+.pager-spinner-next
+{
+    background-position: -44px -21px;
+}
+.pager-spinner-next:hover {
+    background-position: -44px 0;
+}
+.pager-spinner-prev,.pager-spinner-next{}
+.pager-bar{ display: none;}
+.page-number{ float: right;margin-right: 10px;}

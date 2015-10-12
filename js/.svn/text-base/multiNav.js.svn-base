@@ -1,0 +1,33 @@
+(function ($){
+    var $dom = $('.multi-nav');
+    if ($dom.length) {
+        $dom.each(function (){
+            var parentUl = $(this).children('ul.nav-list');
+            var parentAl =  parentUl.children('li.nav-list-item');
+            $(this).css({
+                height : parentUl.height()/2 + 'px',
+                'margin-bottom' : 5 + parentUl.height()/2 + 'px'
+            });
+            parentAl.each(function (){
+                var aNavList = $(this).children('ul.nav-list');
+                aNavList.hide();
+                aNavList.css({
+                    width : 100*aNavList.length +'%'
+                });
+                
+                aNavList.each(function (){
+                    var aSecondaryNavList = $(this).children();
+                    aSecondaryNavList.on('mouseover', function (){
+                        $(this).siblings().removeClass('active');
+                        $(this).addClass('active');
+                    });
+                });
+            });
+            
+            parentAl.on('mouseover', function (){
+                $(this).siblings().removeClass('active').children('ul.nav-list').hide();
+                $(this).addClass('active').children('ul.nav-list').show();
+            });
+        });
+    }
+})(jQuery);

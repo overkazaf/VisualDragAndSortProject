@@ -1,0 +1,32 @@
+@charset utf-8;
+/* 
+	ul {margin:0;padding:0;}
+	ul li {margin-left:28px;}
+	ul li a {font-size:14px;}
+	a {text-decoration: none;}
+*/
+ul[desc=contentShow] {margin:0;padding:0;}
+ul[desc=contentShow] li {
+	list-style-position: inside !important;line-height:28px;height:28px;margin-top:2px;color:#000;padding-left: 4px;
+}
+/* 下划线类型 */
+.underline-none {border:0;}
+.underline-solid {border-bottom:1px solid #000;}
+.underline-dashed {border-bottom:1px dashed #000;}
+.underline-dotted {border-bottom:1px dotted #000;}
+.underline-double {border-bottom:3px double  #000;}
+
+
+/* 项目符号类型 */
+.liststyle-none {list-style: none;}
+.liststyle-disc {list-style-position:inside;list-style: disc;}
+.liststyle-circle {list-style-position:inside;list-style: circle;}
+.liststyle-square {list-style-position:inside;list-style: square;}
+.liststyle-decimal {list-style-position:inside;list-style: decimal;}
+.liststyle-decimalLz {list-style-position:inside;list-style: decimal-leading-zero;}
+
+/* 日期样式 */
+.date {float:right;font-family: "Microsoft Yahei";}
+
+/* 热点样式 */
+.hot-news {position:relative;top:-10px;left:-15px;width:30px;color:#fff;height:22px;line-height: 22px;cursor:pointer;border-radius:5px;padding:4px;font-size:12px;background:#f40;};
