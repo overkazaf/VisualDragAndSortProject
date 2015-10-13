@@ -1,0 +1,75 @@
+// Route Paths
+{
+	tookit : 'utils/tookit'
+	jquery : 'lib/jquery-1.11.1.min',
+	bootstrap : 'plugins/bootstrap.min',
+	jqSmartMenu : 'plugins/jquery-smartMenu',
+	jqDragsort : 'plugins/jquery.dragsort-0.5.1.min',
+	jqDraggalbe : 'plugins/jquery-johnDraggalbe',
+	jqSlidable : 'plugins/jquery-johnSlidalbe',
+	jqMultiSlider : 'plugins/jquery-multiSlider',
+	jqColorPicker : 'plugins/jquery-colorpicker',
+	Common : 'utils/Common',
+	ftlTransformer : 'utils/ftlTransformer',
+	layoutBuilder : 'utils/layoutBuilder',
+	smartMenuExt : 'utils/smartMenu-ext',
+	widgetFactory : 'utils/widgetFactory',
+	widgetEventProxy : 'utils/widgetEventProxy'
+}
+
+
+
+// Shim
+{
+bootstrap : {
+	deps : ['jquery']
+},
+jqDragModal : {
+	deps : ['jquery'],
+	exports : 'jQuery.fn.DragModal'
+},
+jqJohnDraggable : {
+	deps : ['jquery'],
+	exports : 'jQuery.fn.DohnDraggable'
+},
+jqJohnSlidable : {
+	deps : ['jquery'],
+	exports : 'jQuery.fn.JohnSlidable'
+},
+jqMultiSlider : {
+	deps : ['jquery'],
+	exports : 'jQuery.fn.MultiSlider'
+},
+jqSmartMenu : {
+	deps : ['jquery'],
+	exports : 'jQuery.fn.SmartMenu'
+},
+smartMenuExt : {
+	deps : ['jquery', 'jqSmartMenu'],
+	exports : 'SmartMentExt'
+},
+jqColorPicker : {
+	deps : ['jquery'],
+	exports : 'jQuery.fn.ColorPicker'
+},
+ftlTransformer : {
+	deps : ['jquery'],
+	exports : 'FtlTransformer'
+},
+Common : {
+	deps : ['jquery'],
+	exports : 'Common'
+},
+layoutBuilder : {
+	deps : ['jquery'],
+	exports : 'LayoutBuilder'
+},
+widgetFactory : {
+	deps : ['jquery'],
+	exports : 'WidgetFactory'
+},
+widgetEventProxy : {
+	deps : ['jquery'],
+	exports : 'WidgetEventProxy'
+}
+}
