@@ -7,7 +7,7 @@
  * update logs : 
  * 		2015/10/09    new feature for special tagged html replacement
  */
-	// A tiny seed id generator
+	
 	
 	var HTMLCodeType;
 	function CodePredictor (htmlJSON) {
@@ -139,36 +139,6 @@
 	function initModules( htmlJSON ){
 			command = new loadHTMLCommand(htmlJSON);
 			command.execute();
-	 	//    var callbacks = $.Callbacks('once');
-		// if (entry && entry !== '') {
-		// 	$.ajax({
-		// 		url : entry,
-		// 		type : "GET",
-		// 		cache : false,
-		// 		async : false,
-		// 		dataType : "text",
-		// 		success : function (data){
-		// 			$('#main-wrapper').replaceWith(data);
-		// 		}
-		// 	}).done(function (){
-		// 	    callbacks.add(initHeader);
-		// 	    callbacks.add(initMainWrapper);
-		// 	    callbacks.add(initDragWidgets);
-		// 	    callbacks.add(initDragLayouts);
-		// 	    callbacks.add(initWidgetFactory);
-		// 	    callbacks.add(preloadCachedData);
-		// 	    callbacks.add(highlightListener);
-		// 	    callbacks.fire();
-		// 	});
-		// } else {
-		//     callbacks.add(initHeader);
-  //           callbacks.add(initMainWrapper);
-  //           callbacks.add(initDragWidgets);
-  //           callbacks.add(initDragLayouts);
-  //           callbacks.add(initWidgetFactory);
-  //           callbacks.add(highlightListener);
-  //           callbacks.fire();
-		// }
 	}
 	
 	var wFactory;  // widget factory instance
@@ -209,21 +179,7 @@
 			}).appendTo($('body'));
 			return oDiv;
 	};
-	var getMaskInstance = (function (){
-		getInstance(createMask);
-	})();
 
-	var maskStrategies = {
-		'show' : function (){
-			getMaskInstance();
-		},
-		'hide' : function (){
-			getMaskInstance();
-		}
-	};
-	function Waiting (status) {
-		return maskStrategies[status]();
-	}
 
 	function initHeader(callback){
 		var oHeader = $('.header');
@@ -426,23 +382,6 @@
 		}
 
 		//This will get all the generated themes that have already been published
-//		$.ajax({
-//			url : "scan.php",
-//			cache : false,
-//			type : "GET",
-//			dataType : "JSON",
-//			success : function (d){
-//				if (d['success'] == true) {
-//					var fragment = '';
-//					var data = d['data'];
-//					$.each(data, function (i){
-//						var shortName = this.substring(0,this.indexOf('.html'));
-//						fragment += '<li class="theme-list-item" data-theme-template="'+shortName+'">主题'+(i)+'</li>';
-//					});
-//					themeList.html(fragment);
-//				}
-//			}
-//		});
 	}
 
 	function initBackground () {
@@ -635,38 +574,7 @@
 	}
 	
 
-	// 页面需要加载的模块，升级版本会移动到模块加载器里统一管理调度
-	var 
-		hasJQ = !1, // jquery, 和应用的版本一致
-	    jsInjected = !1, // 用户自定义注入的脚本
-	    hasPPT = !1, // 幻灯插件
-	    hasShortcutPPT = !1, // 带缩略图的幻灯片插件
-	    hasVOTE = !1, // 投票模块
-	    hasMultiNav = !1, // 多级导航条
-	    hasTPSlider = !1, // 无缝轮轮播
-		hasMultiPanel = !1, // 切换面板
-		hasMarquee = !1, // 走马灯
-		hasTab = !1; // 选项卡
-		hasDropdown = !1, // 下拉框
-		hasShowtime = !1, // 时间插件
-		hasWeather = !1, // 天气预报
-		hasBotPPT = !1, // 底部缩略PPT
-		hasEasySlides = !1, // 简易PPT
-		hasSlideTop = !1, // 上下滑动PPT
-		hasCountdown = !1, // 倒计时插件
-		hasSlideNormal = !1, // PPT带文字说明
-		hasScrollText = !1, // 上下滚动
-		hasScrollLeft = !1, // 水平滚动图片
-		hasNavBox = !1, // 手风琴导航
-		hasHotList = !1; // 最新或热点新闻
-
-	var 
-		counterMapping = { // 用于统计的脚本映射字典
-			'text' 			: '<script>这里是需要嵌入的站点脚本<script>', 
-			'table' 		: 'textUrl', 
-			'picture' 		: 'textUrl', 
-			'undefined' 	: 'textUrl' 
-		};
+	
 
 
 	function doPublish(originHTML){
@@ -1342,28 +1250,7 @@
 		oModal.modal('show');
 	}
 
-	// add en easy DOM2 function for highlight function
 	
-	EventUtils = {
-		add : function (obj, type, fn){
-			if(obj.addEventListener){
-				addEvent = obj.addEventListener(type, fn, false);
-			} else if (window.attachEvent){
-				addEvent = obj.attachEvent('on' + type, fn);
-			} else {
-				obj['on' + type] = fn;
-			}
-		},
-		remove : function (obj, type, fn){
-			if(obj.removeEventListener){
-				addEvent = obj.removeEventListener(type, fn);
-			} else if (obj.detachEvent){
-				addEvent = obj.detachEvent('on' + type, fn);
-			} else {
-				obj['on' + type] = null;
-			}
-		}
-	};
 
 	//This panel is shown for layout configuration
 
@@ -1528,85 +1415,6 @@
         }
 	}
 
-	
-	//=================================================================
-	//
-	// Mask Controll Start
-	// 
-	// comment : This part is a tiny mask util for simulate a static 
-	// 			 modal, which should be combined with some DIY windows.
-	//
-	//
-	//
-	//=================================================================
-	function mask (){
-		var $body = $(document.body);
-		var $win = $(window);
-		if (!$body.find('.mask').length) {
-			$body.append($('<div class="mask"></div>'));
-		}
-		var m = maxMask();
-		if (!m.data('data-resize')) {
-		    $win.on('resize', function (){
-				throttle(m.get(0),maxMask());
-			});
-			m.data('data-resize', true);
-		}
-	}
-
-	function maxMask(){
-		var $doc = $(document);
-		var $body = $(document.body);
-		var oMask = $body.find('.mask');
-		oMask.css({
-			"z-index" : 9999,
-			"background-color" : '#000',
-			"position" : "absolute",
-			"left" : 0, "top" : 0,
-			"width" : $doc.width(),
-			"height" : $doc.height()
-		}).fadeIn();
-
-		var oPanel = $('#sourceCodePanel');
-		if (oPanel.length) {
-			var w = ($(window).width() - oPanel.width())/2;
-			var h = ($(window).height() - oPanel.height())/2;
-
-			w = w>10 ? w : 10;
-			h = h>10 ? h : 10;
-			oPanel.css({
-				left : w,
-				top : h
-			});
-		}
-		return oMask;
-	}
-
-	function unmask(){
-		var $doc = $(document);
-		var oMask = $doc.find('.mask');
-		if (oMask.length) {
-			oMask.css({
-				'z-index' : -1
-			}).hide();
-		}
-	}
-
-	function throttle (obj, fn){
-		clearTimeout(obj.timeoutId);
-		obj.timeoutId = setTimeout(function (){
-			if ($.isFunction(fn)) {
-				fn();
-			}
-		},50);
-	}
-
-	//=================================================================
-	//
-	// Mask Controll End
-	// 
-	//=================================================================
-
 	/*
 	*
 	*	This allows user to drag and drop an explicit widget into layout-template,
@@ -1658,13 +1466,7 @@
 	//==================================================================================
 
 	
-	function toCamelCase(str){
-		return str.replace(/\-(\w)/g, function(all, letter){return letter.toUpperCase();});
-	}
-
-	function camel2HB(str){
-		return str.replace(/([A-Z])/g,"-$1").toLowerCase();
-	}
+	
 
 	window.debug = true;
 	function log(k,v){

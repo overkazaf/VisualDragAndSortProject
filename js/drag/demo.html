@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<body>
+	
+</body>
+<script type="text/javascript" src="require.js"></script>
+<script type="text/javascript">
+	require.config({
+		paths : {
+			tookit : 'utils/tookit'
+			jquery : 'lib/jquery-1.11.1.min',
+			bootstrap : 'lib/bootstrap.min',
+			jqSmartMenu : 'plugins/'
+		},
+		shim ：{
+			bootstrap : {
+				deps : ['jquery']
+			},
+			jqDragModal : {
+				deps : ['jquery'],
+				exports : 'jQuery.fn.dragModal'
+			},
+			jqJohnDraggable : {
+				deps : ['jquery'],
+				exports : 'jQuery.fn.johnDraggable'
+			},
+			jqJohnSlidable : {
+				deps : ['jquery'],
+				exports : 'jQuery.fn.johnSlidable'
+			},
+			jqSmartMenu : {
+				deps : ['jquery'],
+				exports : 'jQuery.fn.SmartMenu'
+			}
+		}
+	});
+
+	require(['tookit'], function (tookit){
+		var uuid = tookit.generatorId(16, 16, null, null, '_tests');
+		console.log(uuid);
+	});
+</script>
+</html>
